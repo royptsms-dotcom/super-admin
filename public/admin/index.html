@@ -244,7 +244,8 @@ tr:hover td{background:rgba(4,169,245,.04);}
     </div>
     <div class="card">
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-        <input class="form-input" id="cari-karyawan" placeholder="� Cari nama atau email..." oninput="filterKaryawan()" style="max-width:280px;">
+        <input class="form-input" id="cari-karyawan" placeholder="🔍 Cari nama atau ID..." oninput="filterKaryawan()" style="max-width:200px;">
+        <select class="form-select" id="filter-job" onchange="filterKaryawan()" style="width:150px;"><option value="">Semua Job</option></select>
         <select class="form-select" id="filter-role" onchange="filterKaryawan()" style="width:130px;"><option value="">Semua Role</option><option value="client">Client</option><option value="admin">Admin</option></select>
         <select class="form-select" id="filter-status" onchange="filterKaryawan()" style="width:130px;"><option value="">Semua Status</option><option value="active">Aktif</option><option value="inactive">Nonaktif</option></select>
       </div>
@@ -477,6 +478,56 @@ tr:hover td{background:rgba(4,169,245,.04);}
   </div>
 </div>
 
+<!-- Modal Edit Email Karyawan -->
+<div class="modal-overlay" id="modal-edit-email">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Edit Email Karyawan</div><button class="modal-close" onclick="closeModal('modal-edit-email')">✕</button></div>
+    <div class="form-group"><label class="form-label">Nama Karyawan</label><input class="form-input" id="eemail-nama" readonly style="background:var(--bg3);"></div>
+    <div class="form-group"><label class="form-label">Email Baru</label><input class="form-input" id="eemail-email" type="email" placeholder="email@example.com"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-edit-email')">Batal</button><button class="btn btn-primary" onclick="simpanEditEmail()">Simpan Email</button></div>
+  </div>
+</div>
+
+<!-- Modal ID Card Preview -->
+<div class="modal-overlay" id="modal-idcard">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title">Preview ID Card Karyawan</div><button class="modal-close" onclick="closeModal('modal-idcard')">✕</button></div>
+    <div style="display:flex;gap:24px;justify-content:center;">
+      <!-- ID Card Preview -->
+      <div style="width:320px;background:linear-gradient(135deg,rgba(4,169,245,.1),rgba(62,191,234,.1));border:2px solid rgba(4,169,245,.3);border-radius:16px;padding:20px;text-align:center;">
+        <div style="margin-bottom:12px;">
+          <img id="idcard-foto" src="" style="width:140px;height:140px;border-radius:12px;object-fit:cover;border:2px solid var(--accent);">
+        </div>
+        <div><img id="idcard-logo" src="" style="width:40px;height:40px;margin-bottom:8px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;" id="idcard-perusahaan">Nama Perusahaan</div>
+        <div style="border-top:1px solid rgba(4,169,245,.2);padding-top:12px;">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">ID / EMPLOYEE</div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent);font-family:var(--mono);margin-bottom:8px;" id="idcard-id">-</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;" id="idcard-nama">-</div>
+          <div style="font-size:11px;color:var(--muted);" id="idcard-job">-</div>
+        </div>
+      </div>
+      <!-- Preview Options -->
+      <div style="flex:1;">
+        <div class="form-group"><label class="form-label">Opsi Cetak</label></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-primary" style="width:100%;" onclick="printIDCard()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;display:inline;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path></svg>Cetak ID Card</button>
+          <button class="btn btn-ghost" style="width:100%;" onclick="printNameTag()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;display:inline;"><path d="M6 9h12M6 9a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2M6 9v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9"></path></svg>Cetak Name Tag</button>
+        </div>
+        <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;">
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+            <strong>Catatan:</strong>
+            <br>• ID Card: Ukuran kartu standar (85x54mm)
+            <br>• Name Tag: Ukuran badge standar (75x100mm)
+            <br>• Pastikan printer sudah siap sebelum mencetak
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-idcard')">Tutup</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -688,27 +739,140 @@ async function downloadXlsx(){window.open(`${API}/api/admin/rekap/xlsx?bulan=${d
 // ── Karyawan ──────────────────────────────────────────────────────────────────
 async function loadKaryawan(){
   const d=await apiFetch('/api/admin/users');
-  allUsers=Array.isArray(d)?d:[];renderKaryawan(allUsers);
+  allUsers=Array.isArray(d)?d:[];
+  // Populate job filter
+  const jobSelect=document.getElementById('filter-job');
+  if(jobSelect){
+    const jobSet=new Set(allUsers.filter(u=>u.job).map(u=>u.job));
+    const jobs=Array.from(jobSet).sort();
+    jobSelect.innerHTML='<option value="">Semua Job</option>'+jobs.map(j=>`<option value="${j}">${j}</option>`).join('');
+  }
+  renderKaryawan(allUsers);
 }
 function renderKaryawan(users){
   const tb=document.getElementById('tabel-karyawan');
   if(!users.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Tidak ada data</td></tr>`;return;}
   tb.innerHTML=users.map(u=>`<tr>
     <td><span style="font-family:var(--mono);font-size:12px;font-weight:600;">${u.employee_id||'-'}</span></td>
-    <td><div style="display:flex;align-items:center;gap:9px;"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">${(u.nama||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div><span style="font-weight:500;">${u.nama}</span></div></td>
-    <td style="color:var(--muted);font-size:13px;">${u.email}</td>
+    <td><div style="display:flex;align-items:center;gap:9px;cursor:pointer;onclick='openIDCardModal(\"${u.id}\")'" title="Klik untuk preview ID Card"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;">${(u.nama||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div><span style="font-weight:500;">${u.nama}</span></div></td>
+    <td style="color:var(--muted);font-size:13px;"><button class="btn btn-ghost btn-sm" style="padding:0;margin:0;font-size:12px;" onclick="editEmailModal('${u.id}','${u.email}')" title="Klik untuk edit email">${u.email}</button></td>
     <td style="font-family:var(--mono);font-size:12px;color:var(--muted);">${u.no_wa||'-'}</td>
     <td>${u.job?`<span style="background:rgba(4,169,245,.1);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:12px;font-weight:600;">${u.job}</span>`:'<span style="color:var(--muted);font-size:12px;">-</span>'}</td>
     <td><span class="badge ${u.role==='admin'?'badge-amber':'badge-blue'}">${u.role}</span></td>
     <td><span class="badge ${u.is_active?'badge-green':'badge-red'}">${u.is_active?'Aktif':'Nonaktif'}</span></td>
-    <td><div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${u.id}')">✏️ Edit</button><button class="btn ${u.is_active?'btn-danger':'btn-success'} btn-sm" onclick="toggleAktif('${u.id}','${(u.nama||'').replace(/'/g,"\\'")}',${u.is_active})">${u.is_active?'Nonaktif':'Aktifkan'}</button></div></td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn btn-primary btn-sm" onclick="openIDCardModal('${u.id}')" title="Cetak ID Card & Name Tag">🎫 Cetak</button><button class="btn btn-ghost btn-sm" onclick="editKaryawan('${u.id}')">✏️ Edit</button><button class="btn ${u.is_active?'btn-danger':'btn-success'} btn-sm" onclick="toggleAktif('${u.id}','${(u.nama||'').replace(/'/g,"\\'")}',${u.is_active})">${u.is_active?'X':'✓'}</button></div></td>
   </tr>`).join('');
 }
 function filterKaryawan(){
   const cari=document.getElementById('cari-karyawan').value.toLowerCase();
+  const job=document.getElementById('filter-job').value;
   const role=document.getElementById('filter-role').value;
   const status=document.getElementById('filter-status').value;
-  renderKaryawan(allUsers.filter(u=>(!cari||u.nama.toLowerCase().includes(cari)||u.email.toLowerCase().includes(cari))&&(!role||u.role===role)&&(!status||(status==='active'?u.is_active:!u.is_active))));
+  renderKaryawan(allUsers.filter(u=>
+    (!cari||(u.nama||'').toLowerCase().includes(cari)||(u.employee_id||'').includes(cari))&&
+    (!job||u.job===job)&&
+    (!role||u.role===role)&&
+    (!status||(status==='active'?u.is_active:!u.is_active))
+  ));
+}
+let editingEmailUserId=null;
+function editEmailModal(userId,currentEmail){
+  editingEmailUserId=userId;
+  document.getElementById('eemail-nama').value=allUsers.find(u=>u.id===userId)?.nama||'';
+  document.getElementById('eemail-email').value=currentEmail;
+  openModal('modal-edit-email');
+}
+async function simpanEditEmail(){
+  const newEmail=document.getElementById('eemail-email').value.trim();
+  if(!newEmail){toast('Email tidak boleh kosong','error');return;}
+  const r=await apiFetch(`/api/admin/users/${editingEmailUserId}`,{method:'PATCH',body:JSON.stringify({email:newEmail})});
+  if(r.error){toast(r.error,'error');return;}
+  const user=allUsers.find(u=>u.id===editingEmailUserId);
+  if(user) user.email=newEmail;
+  toast('Email berhasil diubah');
+  closeModal('modal-edit-email');
+  renderKaryawan(allUsers);
+}
+let previewUserId=null;
+function openIDCardModal(userId){
+  const user=allUsers.find(u=>u.id===userId);
+  if(!user) return;
+  previewUserId=userId;
+  const profilNama=document.getElementById('app-nama-input')?.value||document.getElementById('app-nama')?.textContent||'Perusahaan';
+  const logoIcon=document.getElementById('logo-icon')?.textContent||'💼';
+  document.getElementById('idcard-id').textContent=user.employee_id||'-';
+  document.getElementById('idcard-nama').textContent=user.nama||'-';
+  document.getElementById('idcard-job').textContent=user.job||'-';
+  document.getElementById('idcard-perusahaan').textContent=profilNama;
+  document.getElementById('idcard-logo').textContent=logoIcon;
+  document.getElementById('idcard-logo').style.fontSize='32px';
+  // Set foto if available, otherwise use placeholder
+  const foto=document.querySelector('.admin-avatar img')?.src||'';
+  document.getElementById('idcard-foto').src=foto||'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="rgba(4,169,245,.3)" stroke-width="1"%3E%3Ccircle cx="12" cy="8" r="4"/%3E%3Cpath d="M4 20c0-4 3.6-8 8-8s8 4 8 8"/%3E%3C/svg%3E';
+  openModal('modal-idcard');
+}
+function printIDCard(){
+  const user=allUsers.find(u=>u.id===previewUserId);
+  if(!user) return;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>ID Card - ${user.nama}</title><style>
+    body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;font-family:Arial,sans-serif;}
+    .card{width:85mm;height:54mm;background:linear-gradient(135deg,rgba(4,169,245,.05),rgba(62,191,234,.05));border:2px solid rgba(4,169,245,.3);border-radius:8px;padding:6mm;box-sizing:border-box;display:flex;gap:6mm;}
+    .foto{width:30mm;height:42mm;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .foto img{width:100%;height:100%;object-fit:cover;border-radius:4px;}
+    .info{flex:1;display:flex;flex-direction:column;justify-content:space-between;}
+    .logo{font-size:24px;margin-bottom:2mm;}
+    .perusahaan{font-size:8px;color:#666;margin-bottom:2mm;}
+    .devider{border-bottom:1px solid rgba(4,169,245,.2);margin:2mm 0;}
+    .label{font-size:7px;color:#999;margin-bottom:1mm;text-transform:uppercase;font-weight:bold;}
+    .id{font-size:12px;font-weight:bold;color:#04A9F5;font-family:monospace;margin-bottom:2mm;}
+    .nama{font-size:10px;font-weight:600;color:#000;margin-bottom:1mm;}
+    .job{font-size:8px;color:#666;}
+  </style></head><body><div class="card">
+    <div class="foto"><img src="${document.getElementById('idcard-foto').src||''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22rgba(0,0,0,.1)%22 stroke-width=%221%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 20c0-4 3.6-8 8-8s8 4 8 8%22/%3E%3C/svg%3E'"></div>
+    <div class="info">
+      <div>
+        <div class="logo">${user.employee_id?.substring(0,1)||'•'}</div>
+        <div class="perusahaan">${document.getElementById('idcard-perusahaan').textContent}</div>
+      </div>
+      <div>
+        <div class="devider"></div>
+        <div class="label">Employee ID</div>
+        <div class="id">${user.employee_id||'-'}</div>
+        <div class="nama">${user.nama||'-'}</div>
+        <div class="job">${user.job||'-'}</div>
+      </div>
+    </div>
+  </div></body></html>`);
+  setTimeout(()=>w.print(),500);
+}
+function printNameTag(){
+  const user=allUsers.find(u=>u.id===previewUserId);
+  if(!user) return;
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Name Tag - ${user.nama}</title><style>
+    body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f5f5f5;font-family:Arial,sans-serif;}
+    .tag{width:75mm;height:100mm;background:linear-gradient(135deg,rgba(4,169,245,.08),rgba(62,191,234,.08));border:2px dashed rgba(4,169,245,.4);border-radius:12px;padding:8mm;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:space-between;}
+    .logo{font-size:32px;margin-bottom:4mm;}
+    .perusahaan{font-size:10px;color:#666;margin-bottom:12mm;font-weight:bold;}
+    .divider{width:100%;border-bottom:2px dashed rgba(4,169,245,.2);margin:8mm 0;}
+    .info{text-align:center;}
+    .nama{font-size:18px;font-weight:bold;color:#000;margin-bottom:4mm;}
+    .id{font-size:10px;color:#04A9F5;font-family:monospace;margin-bottom:4mm;font-weight:bold;}
+    .job{font-size:11px;color:#666;}
+  </style></head><body><div class="tag">
+    <div></div>
+    <div class="logo">${document.getElementById('idcard-logo').textContent}</div>
+    <div class="perusahaan">${document.getElementById('idcard-perusahaan').textContent}</div>
+    <div class="divider"></div>
+    <div class="info">
+      <div class="nama">${user.nama||'-'}</div>
+      <div class="id">${user.employee_id||'-'}</div>
+      <div class="job">${user.job||'-'}</div>
+    </div>
+    <div></div>
+  </div></body></html>`);
+  setTimeout(()=>w.print(),500);
 }
 async function openModalTambah(){
   editUserId=null;
