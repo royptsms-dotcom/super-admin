@@ -61,6 +61,8 @@ wsl -e bash -c "echo 'cd /mnt/d/Android && HOST=0.0.0.0 node server.js' >> /tmp/
 wsl -e bash -c "chmod +x /tmp/run-backend.sh"
 
 wsl -e bash -c "echo 'pkill -f \"expo start\" 2>/dev/null' > /tmp/run-expo.sh"
+wsl -e bash -c "echo 'fuser -k 8080/tcp 2>/dev/null' >> /tmp/run-expo.sh"
+wsl -e bash -c "echo 'sleep 2' >> /tmp/run-expo.sh"
 wsl -e bash -c "echo 'sleep 1' >> /tmp/run-expo.sh"
 wsl -e bash -c "echo 'cd /mnt/d/Android/tunjangan-app-win && EXPO_NO_INSPECTOR=1 REACT_NATIVE_PACKAGER_HOSTNAME=%WIN_IP% npx expo start --port 8080' >> /tmp/run-expo.sh"
 wsl -e bash -c "chmod +x /tmp/run-expo.sh"
