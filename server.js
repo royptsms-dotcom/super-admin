@@ -34,4 +34,8 @@ app.listen(PORT, async () => {
   } else {
     console.log('⚠️  Google Sheets belum dikonfigurasi, skip sync.');
   }
+
+  // Start cache cleanup service
+  const { scheduleCleanup } = require('./services/cache-cleanup.service');
+  scheduleCleanup();
 });

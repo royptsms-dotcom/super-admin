@@ -83,15 +83,32 @@ router.get('/me', auth, async (req, res) => {
   res.json(data);
 });
 
-// GET /api/auth/profil — ambil profil lengkap user yang login
+// GET /api/auth/profil — ambil profil lengkap user yang login + settings
 router.get('/profil', auth, async (req, res) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, nama, email, role, no_wa, employee_id, foto_url, created_at')
-    .eq('id', req.user.id)
-    .single();
-  if (error) return res.status(404).json({ error: 'User tidak ditemukan' });
-  res.json(data);
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, nama, email, role, no_wa, employee_id, foto_url, created_at')
+      .eq('id', req.user.id)
+      .single();
+    if (error) return res.status(404).json({ error: 'User tidak ditemukan' });
+
+    // Fetch lembur timeout dari config
+    const { data: configData } = await supabase
+      .from('config')
+      .select('value')
+      .eq('key', 'lembur_timeout_seconds')
+      .single();
+
+    const timeout = parseInt(configData?.value || '600');
+
+    res.json({
+      ...data,
+      lembur_timeout_seconds: timeout
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PATCH /api/auth/profil — update foto saja (nama, no_wa, employee_id dikunci)
