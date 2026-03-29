@@ -9,7 +9,6 @@ import api from '../services/api';
 export default function StandbyScreen() {
   const router = useRouter();
   const [loading, setLoading]   = useState(false);
-  const [riwayat, setRiwayat]   = useState([]);
   const [sudahHariIni, setSudahHariIni] = useState(false);
   const [dataHariIni, setDataHariIni]   = useState(null);
 
@@ -18,20 +17,18 @@ export default function StandbyScreen() {
   const jenisHariIni = hariIni === 0 ? 'minggu' : 'hari_raya';
 
   useEffect(() => {
-    ambilRiwayat();
+    cekStatusHariIni();
   }, []);
 
-  async function ambilRiwayat() {
+  async function cekStatusHariIni() {
     try {
-      const res = await api.get('/api/standby/riwayat');
-      setRiwayat(res.data);
-      const sudah = res.data.find(s => s.tanggal === today);
-      if (sudah) {
+      const res = await api.get('/api/standby/status-hari-ini');
+      if (res.data) {
         setSudahHariIni(true);
-        setDataHariIni(sudah);
+        setDataHariIni(res.data);
       }
     } catch (err) {
-      console.log('Gagal ambil riwayat standby');
+      console.log('Info: Belum ada standby hari ini');
     }
   }
 
@@ -49,7 +46,7 @@ export default function StandbyScreen() {
               setLoading(true);
               await api.post('/api/standby', { tanggal: today });
               Alert.alert('Berhasil! 🎉', 'Status standby sudah dikirim ke grup WA', [
-                { text: 'OK', onPress: () => ambilRiwayat() }
+                { text: 'OK', onPress: () => cekStatusHariIni() }
               ]);
             } catch (err) {
               Alert.alert('Gagal', err.response?.data?.error || 'Terjadi kesalahan');
@@ -128,24 +125,6 @@ export default function StandbyScreen() {
           </Text>
         </View>
 
-        {/* Riwayat */}
-        {riwayat.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.label}>📋 Riwayat Standby</Text>
-            {riwayat.map(item => (
-              <View key={item.id} style={styles.riwayatItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.riwayatTanggal}>{formatTanggal(item.tanggal)}</Text>
-                  <Text style={styles.riwayatJenis}>{labelJenis(item.jenis_standby)}</Text>
-                </View>
-                <View style={[styles.statusBadge, item.status_wa === 'sent' ? styles.badgeSent : styles.badgePending]}>
-                  <Text style={styles.badgeText}>{item.status_wa === 'sent' ? '✓ Terkirim' : '⏳'}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
       </ScrollView>
     </View>
   );
@@ -170,11 +149,4 @@ const styles = StyleSheet.create({
   applyBtn:       { backgroundColor: '#2dc653', borderRadius: 10, paddingVertical: 14, paddingHorizontal: 32 },
   applyDisabled:  { backgroundColor: '#a0aec0' },
   applyText:      { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  riwayatItem:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#f0f0f0' },
-  riwayatTanggal: { fontSize: 13, fontWeight: '600', color: '#1a1a2e' },
-  riwayatJenis:   { fontSize: 12, color: '#666', marginTop: 2 },
-  statusBadge:    { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  badgeSent:      { backgroundColor: '#e8f8ed' },
-  badgePending:   { backgroundColor: '#fff3e0' },
-  badgeText:      { fontSize: 11, fontWeight: '600', color: '#555' },
 });
