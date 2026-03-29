@@ -1,5 +1,6 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const supabase = require('../lib/supabase');
 
 const CONFIG = {
   GRUP_WA_ID: '6282280585605-1489035825@g.us',
@@ -45,9 +46,10 @@ function formatDurasi(durasiMenit) {
   return `${jam} jam ${menit} menit`;
 }
 
-async function kirimPesan(pesan) {
+async function kirimPesan(pesan, groupId = null) {
   try {
-    await client.sendMessage(CONFIG.GRUP_WA_ID, pesan);
+    const targetGroup = groupId || CONFIG.GRUP_WA_ID;
+    await client.sendMessage(targetGroup, pesan);
     console.log('✅ Pesan terkirim ke grup WA');
     return { success: true };
   } catch (err) {
@@ -56,10 +58,11 @@ async function kirimPesan(pesan) {
   }
 }
 
-async function kirimFotoUrl(fotoUrl, caption) {
+async function kirimFotoUrl(fotoUrl, caption, groupId = null) {
   try {
+    const targetGroup = groupId || CONFIG.GRUP_WA_ID;
     const media = await MessageMedia.fromUrl(fotoUrl, { unsafeMime: true });
-    await client.sendMessage(CONFIG.GRUP_WA_ID, media, { caption });
+    await client.sendMessage(targetGroup, media, { caption });
     console.log('✅ Foto + caption terkirim ke grup WA');
     return { success: true };
   } catch (err) {
@@ -69,7 +72,7 @@ async function kirimFotoUrl(fotoUrl, caption) {
 }
 
 // ─── SHARE LOKASI ─────────────────────────────────────────────────────────────
-async function kirimShareLokasi(data) {
+async function kirimShareLokasi(data, groupId = null) {
   const waktu   = formatWaktu();
   const mapsUrl = `https://maps.google.com/?q=${data.latitude},${data.longitude}`;
 
@@ -91,11 +94,11 @@ async function kirimShareLokasi(data) {
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `🗺️ *Maps:* ${mapsUrl}`;
 
-  return await kirimPesan(pesan);
+  return await kirimPesan(pesan, groupId);
 }
 
 // ─── LEMBUR ───────────────────────────────────────────────────────────────────
-async function kirimLembur(data) {
+async function kirimLembur(data, groupId = null) {
   const waktuFotoStr = formatWaktu(new Date(data.waktuFoto));
   const durasiStr    = formatDurasi(data.durasiMenit);
 
@@ -122,11 +125,11 @@ async function kirimLembur(data) {
     `📝 *Keterangan:* ${data.keterangan}\n` +
     `━━━━━━━━━━━━━━━━━━━━`;
 
-  return await kirimFotoUrl(data.fotoUrl, caption);
+  return await kirimFotoUrl(data.fotoUrl, caption, groupId);
 }
 
 // ─── STANDBY ──────────────────────────────────────────────────────────────────
-async function kirimStandby(data) {
+async function kirimStandby(data, groupId = null) {
   const tanggalStr = formatWaktu(new Date(data.tanggal + 'T00:00:00'));
   const waktuApply = formatWaktu();
 
@@ -143,7 +146,24 @@ async function kirimStandby(data) {
     `🕐 *Apply:* ${waktuApply}\n` +
     `━━━━━━━━━━━━━━━━━━━━`;
 
-  return await kirimPesan(pesan);
+  return await kirimPesan(pesan, groupId);
 }
 
-module.exports = { client, kirimShareLokasi, kirimLembur, kirimStandby };
+module.exports = { client, kirimShareLokasi, kirimLembur, kirimStandby, getWaGroupIdByJobId, kirimPesan, kirimFotoUrl };
+
+// Helper function: Get WA Group ID by Job ID
+async function getWaGroupIdByJobId(jobId) {
+  try {
+    const { data, error } = await supabase
+      .from('wa_group_mappings')
+      .select('wa_group_id')
+      .eq('job_id', jobId)
+      .single();
+    
+    if (error || !data) return null;
+    return data.wa_group_id;
+  } catch (err) {
+    console.error('Error getting WA group ID:', err.message);
+    return null;
+  }
+}

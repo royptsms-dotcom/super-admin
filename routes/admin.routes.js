@@ -109,6 +109,104 @@ router.delete('/jobs/:id', auth, adminOnly, async (req, res) => {
   res.json({ success: true });
 });
 
+// ─── WA GROUPS (Per-Job WhatsApp Group Mapping) ────────────────────────────────
+router.get('/wa-groups', auth, adminOnly, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('wa_group_mappings')
+      .select('id, job_id, wa_group_id, group_name, created_at, updated_at')
+      .order('created_at', { ascending: false });
+    if (error) return res.status(400).json({ error: error.message });
+    
+    // Enrich dengan job info
+    const enriched = await Promise.all(data.map(async (mapping) => {
+      const { data: job } = await supabase
+        .from('jobs').select('id, nama').eq('id', mapping.job_id).single();
+      return { ...mapping, job: job };
+    }));
+    
+    res.json(enriched);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/wa-groups', auth, adminOnly, async (req, res) => {
+  try {
+    const { job_id, wa_group_id, group_name } = req.body;
+    
+    if (!job_id || !wa_group_id)
+      return res.status(400).json({ error: 'Job ID dan WhatsApp Group ID wajib diisi' });
+    
+    // Validasi job exists
+    const { data: jobExists } = await supabase
+      .from('jobs').select('id, nama').eq('id', job_id).single();
+    if (!jobExists)
+      return res.status(400).json({ error: 'Job tidak ditemukan' });
+    
+    // Check duplicate wa_group_id
+    const { data: duplicate } = await supabase
+      .from('wa_group_mappings').select('id').eq('wa_group_id', wa_group_id).limit(1);
+    if (duplicate && duplicate.length > 0)
+      return res.status(400).json({ error: 'Group WA ini sudah terdaftar' });
+    
+    const { data, error } = await supabase
+      .from('wa_group_mappings')
+      .insert({
+        job_id,
+        wa_group_id,
+        group_name: group_name || jobExists.nama
+      })
+      .select().single();
+    
+    if (error) return res.status(400).json({ error: error.message });
+    
+    res.json({ success: true, data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch('/wa-groups/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { wa_group_id, group_name } = req.body;
+    const updateData = {};
+    
+    if (wa_group_id) {
+      // Check duplicate if changing wa_group_id
+      const { data: duplicate } = await supabase
+        .from('wa_group_mappings')
+        .select('id')
+        .eq('wa_group_id', wa_group_id)
+        .neq('id', req.params.id)
+        .limit(1);
+      if (duplicate && duplicate.length > 0)
+        return res.status(400).json({ error: 'Group WA ini sudah terdaftar' });
+      updateData.wa_group_id = wa_group_id;
+    }
+    
+    if (group_name !== undefined) updateData.group_name = group_name;
+    if (Object.keys(updateData).length === 0)
+      return res.status(400).json({ error: 'Tidak ada yang diupdate' });
+    
+    const { data, error } = await supabase
+      .from('wa_group_mappings')
+      .update(updateData)
+      .eq('id', req.params.id)
+      .select().single();
+    
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true, data });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/wa-groups/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('wa_group_mappings')
+      .delete()
+      .eq('id', req.params.id);
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── KARYAWAN ─────────────────────────────────────────────────────────────────
 router.get('/users', auth, adminOnly, async (req, res) => {
   const { data, error } = await supabase
