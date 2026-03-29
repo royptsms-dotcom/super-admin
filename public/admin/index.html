@@ -303,6 +303,9 @@ tr:hover td{background:rgba(4,169,245,.04);}
         <div class="form-group"><label class="form-label">Jam mulai lembur Senin–Jumat</label><div style="display:flex;align-items:center;gap:8px;"><input class="form-input" id="s-jam-seninjum" type="number" min="0" max="23" style="width:80px;"><span style="color:var(--muted);font-size:12px;">.00 (default: 18)</span></div></div>
         <div class="form-group"><label class="form-label">Jam mulai lembur Sabtu</label><div style="display:flex;align-items:center;gap:8px;"><input class="form-input" id="s-jam-sabtu" type="number" min="0" max="23" style="width:80px;"><span style="color:var(--muted);font-size:12px;">.00 (default: 15)</span></div></div>
         <div class="form-group"><label class="form-label">Batas jam foto hari sebelumnya</label><div style="display:flex;align-items:center;gap:8px;"><input class="form-input" id="s-batas-jam" type="number" min="0" max="12" style="width:80px;"><span style="color:var(--muted);font-size:12px;">.00 (default: 7)</span></div></div>
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+          <div class="form-group"><label class="form-label">⏱ Timeout Submit Lembur (detik)</label><div style="display:flex;align-items:center;gap:8px;"><input class="form-input" id="s-lembur-timeout" type="number" min="10" max="300" style="width:80px;" placeholder="600"><span style="color:var(--muted);font-size:12px;">(default: 10 menit = 600 detik)</span></div><p style="font-size:11px;color:var(--muted);margin-top:6px;">💡 Jika user tidak submit dalam waktu ini, form akan auto-cancel minta kompil ulang</p></div>
+        </div>
         <button class="btn btn-primary btn-sm" onclick="simpanSetting()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;display:inline;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Simpan</button>
       </div>
       <!-- Kolom 2: Tarif Standby -->
@@ -997,9 +1000,10 @@ async function loadSetting(){
   document.getElementById('s-batas-jam').value=d.batas_jam_lembur_besok||'7';
   document.getElementById('s-jam-seninjum').value=d.jam_mulai_lembur_seninjum||'18';
   document.getElementById('s-jam-sabtu').value=d.jam_mulai_lembur_sabtu||'15';
+  document.getElementById('s-lembur-timeout').value=d.lembur_timeout_seconds||'600';
 }
 async function simpanSetting(){
-  const r=await apiFetch('/api/admin/setting',{method:'PATCH',body:JSON.stringify({tarif_lembur_per_jam:document.getElementById('s-tarif-jam').value,max_lembur:document.getElementById('s-max-lembur').value,harga_standby_minggu:document.getElementById('s-standby-minggu').value,harga_standby_hari_raya:document.getElementById('s-standby-raya').value,batas_jam_lembur_besok:document.getElementById('s-batas-jam').value,jam_mulai_lembur_seninjum:document.getElementById('s-jam-seninjum').value,jam_mulai_lembur_sabtu:document.getElementById('s-jam-sabtu').value})});
+  const r=await apiFetch('/api/admin/setting',{method:'PATCH',body:JSON.stringify({tarif_lembur_per_jam:document.getElementById('s-tarif-jam').value,max_lembur:document.getElementById('s-max-lembur').value,harga_standby_minggu:document.getElementById('s-standby-minggu').value,harga_standby_hari_raya:document.getElementById('s-standby-raya').value,batas_jam_lembur_besok:document.getElementById('s-batas-jam').value,jam_mulai_lembur_seninjum:document.getElementById('s-jam-seninjum').value,jam_mulai_lembur_sabtu:document.getElementById('s-jam-sabtu').value,lembur_timeout_seconds:parseInt(document.getElementById('s-lembur-timeout').value)||600})});
   if(r.error){toast(r.error,'error');return;}toast('Setting berhasil disimpan');
 }
 
