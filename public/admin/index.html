@@ -328,7 +328,7 @@ tr:hover td{background:rgba(4,169,245,.04);}
           <div class="card-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;display:inline;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Icon & Nama Aplikasi</div>
           <div class="form-group"><label class="form-label">Nama Aplikasi</label><input class="form-input" id="app-nama-input" placeholder="Tunjangan App"></div>
           <div class="form-group">
-            <label class="form-label">Icon Aplikasi</label>
+            <label class="form-label">Icon Aplikasi (Ubah & Langsung Diterapkan)</label>
             <select class="form-select" id="app-icon-select" onchange="setAppIconFromSelect()">
               <option value="💼">💼 Kantor</option>
               <option value="🏥">🏥 Rumah Sakit</option>
@@ -341,7 +341,7 @@ tr:hover td{background:rgba(4,169,245,.04);}
             </select>
           </div>
           <div class="form-group" style="margin-top:-8px;">
-            <label class="form-label">Atau kustom icon</label>
+            <label class="form-label">Atau kustom icon (Ketik & Langsung Diterapkan)</label>
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <input class="form-input" id="app-icon-emoji" placeholder="Atau ketik emoji..." style="width:150px;" oninput="previewEmojiInput(this.value)">
               <span style="color:var(--muted);font-size:13px;">atau</span>
@@ -467,7 +467,7 @@ function setAppIconFromSelect(){
   document.getElementById('app-icon-emoji').value=val;
   applyAppIcon(val,'emoji');
   savePrefs({appIcon:val,appIconType:'emoji'});
-  toast('Icon aplikasi disimpan');
+  toast('Icon aplikasi diubah - langsung diterapkan ke login');
 }
 function applySavedPrefs(){
   const p=JSON.parse(localStorage.getItem('admin_prefs')||'{}');
@@ -522,7 +522,12 @@ function pilihIconEmoji(emoji,el){
   document.querySelectorAll('.icon-option').forEach(e=>e.classList.remove('selected'));
   if(el && el.classList && el.classList.contains('icon-option')) el.classList.add('selected');
 }
-function previewEmojiInput(val){if(val.trim()) applyAppIcon(val.trim(),'emoji');}
+function previewEmojiInput(val){
+  if(val.trim()) {
+    applyAppIcon(val.trim(),'emoji');
+    savePrefs({appIcon:val.trim(),appIconType:'emoji'});
+  }
+}
 function uploadLogoPerusahaan(input){const file=input.files[0];if(!file) return;const reader=new FileReader();reader.onload=e=>{const src=e.target.result;applyAppIcon(src,'image');document.getElementById('logo-preview-nama').textContent=file.name;document.getElementById('app-icon-emoji').value='';const iconSelect=document.getElementById('app-icon-select');if(iconSelect)iconSelect.value='';document.querySelectorAll('.icon-option').forEach(e=>e.classList.remove('selected'));savePrefs({appIcon:src,appIconType:'image'});toast('Logo berhasil diupload');};reader.readAsDataURL(file);}
 function hapusLogo(){document.getElementById('logo-preview-wrap').style.display='none';applyAppIcon('💼','emoji');document.getElementById('app-icon-emoji').value='';document.getElementById('app-logo-input').value='';savePrefs({appIcon:'💼',appIconType:'emoji'});toast('Logo dihapus');}
 function simpanTampilan(){const nama=document.getElementById('app-nama-input').value.trim();const emoji=document.getElementById('app-icon-emoji').value.trim();if(nama){applyAppNama(nama);savePrefs({appNama:nama});}if(emoji){applyAppIcon(emoji,'emoji');savePrefs({appIcon:emoji,appIconType:'emoji'});}toast('Tampilan berhasil disimpan');}
@@ -718,7 +723,14 @@ async function loadProfil(){
   document.getElementById('profil-role-display').textContent=`${(d.role||'').toUpperCase()} • ID: ${d.employee_id||'-'}`;
   const prefs=JSON.parse(localStorage.getItem('admin_prefs')||'{}');
   if(prefs.appNama) document.getElementById('app-nama-input').value=prefs.appNama;
-  if(prefs.appIcon&&prefs.appIconType!=='image') document.getElementById('app-icon-emoji').value=prefs.appIcon;
+  if(prefs.appIcon&&prefs.appIconType!=='image') {
+    document.getElementById('app-icon-emoji').value=prefs.appIcon;
+    const appIconSelect=document.getElementById('app-icon-select');
+    if(appIconSelect) {
+      const option=[...appIconSelect.options].find(o=>o.value===prefs.appIcon);
+      if(option) appIconSelect.value=prefs.appIcon;
+    }
+  }
   if(prefs.appIcon&&prefs.appIconType==='image'){document.getElementById('logo-preview-wrap').style.display='flex';document.getElementById('logo-preview-img').src=prefs.appIcon;document.getElementById('logo-preview-nama').textContent='Logo tersimpan';}
   if(d.foto_url){document.getElementById('profil-avatar').innerHTML=`<img src="${d.foto_url}"><div class="profil-avatar-overlay">📷</div>`;document.getElementById('sidebar-avatar').innerHTML=`<img src="${d.foto_url}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`;}
   else{document.getElementById('profil-inisial').textContent=ini;}
@@ -741,7 +753,19 @@ let toastTimer;
 function toast(msg,type='success'){const el=document.getElementById('toast');el.innerHTML=`${type==='success'?'✅':'❌'} ${msg}`;el.className=`toast ${type} show`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
 
 if(TOKEN&&USER&&USER.role==='admin'){initDashboard();}
-else{document.getElementById('login-page').style.display='flex';}
+else{
+  document.getElementById('login-page').style.display='flex';
+  // Load icon tersimpan ke halaman login
+  const prefs=JSON.parse(localStorage.getItem('admin_prefs')||'{}');
+  if(prefs.appIcon){
+    const loginIcon=document.getElementById('login-icon');
+    if(prefs.appIconType==='image'){
+      loginIcon.innerHTML=`<img src="${prefs.appIcon}" style="width:54px;height:54px;object-fit:cover;">`;
+    } else {
+      loginIcon.textContent=prefs.appIcon;
+    }
+  }
+}
 </script>
 </body>
 </html>
