@@ -698,12 +698,14 @@ function initBulanDropdown(){
 }
 function fmt(n){return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(n||0);}
 
+let rekapDeletedItems=new Set();
 async function tarikRekap(){
   const bulan=document.getElementById('rekap-bulan').value;
   const result=document.getElementById('rekap-result');
   const btn=document.getElementById('btn-tarik');const btnXlsx=document.getElementById('btn-xlsx');
   btn.innerHTML='<span class="spinner"></span> Memuat...';btn.disabled=true;
   result.innerHTML='<div class="loading-overlay"><span class="spinner"></span> Memuat rekap...</div>';
+  rekapDeletedItems.clear();
   try{
     const d=await apiFetch(`/api/admin/rekap?bulan=${bulan}`);
     if(d.error){result.innerHTML=`<p style="color:var(--danger)">${d.error}</p>`;return;}
@@ -711,7 +713,41 @@ async function tarikRekap(){
     const grandTotal=d.rekap.reduce((s,r)=>s+r.total.grand,0);
     let html='';
     d.rekap.forEach((item,idx)=>{
-      html+=`<div class="rekap-client-card"><div class="rekap-client-header"><div><div class="rekap-client-nama">${item.client.nama}</div><div class="rekap-client-id">ID: ${item.client.employee_id||'-'}${item.client.job?' · '+item.client.job:''}</div></div><div style="display:flex;align-items:center;gap:12px;"><div class="rekap-client-total">${fmt(item.total.grand)}</div><button class="btn btn-amber btn-sm" onclick="showPreview(rekapData[${idx}])">👁 Preview</button></div></div><div class="rekap-stats"><div class="rekap-stat"><div class="rekap-stat-label">📍 Share Lokasi</div><div class="rekap-stat-count">${item.shareLokasi.length}x</div><div class="rekap-stat-rp">${fmt(item.total.share)}</div></div><div class="rekap-stat"><div class="rekap-stat-label">🕐 Lembur</div><div class="rekap-stat-count">${item.lembur.length}x</div><div class="rekap-stat-rp">${fmt(item.total.lembur)}</div></div><div class="rekap-stat"><div class="rekap-stat-label">🟢 Standby</div><div class="rekap-stat-count">${item.standby.length}x</div><div class="rekap-stat-rp">${fmt(item.total.standby)}</div></div></div></div>`;
+      const shareTotal=item.shareLokasi.length?fmt(item.total.share):'—';
+      const lemburTotal=item.lembur.length?fmt(item.total.lembur):'—';
+      const standbyTotal=item.standby.length?fmt(item.total.standby):'—';
+      html+=`<details class="rekap-client-card" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg2);">
+        <summary style="display:flex;align-items:center;justify-content:space-between;font-weight:600;outline:none;user-select:none;">
+          <div style="flex:1;">
+            <div class="rekap-client-nama">${item.client.nama}</div>
+            <div class="rekap-client-id">ID: ${item.client.employee_id||'-'}${item.client.job?' · '+item.client.job:''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;margin-left:12px;">
+            <div class="rekap-client-total">${fmt(item.total.grand)}</div>
+            <span style="color:var(--muted);font-size:12px;font-weight:400;">▼</span>
+          </div>
+        </summary>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div class="rekap-stats">
+            <div class="rekap-stat">
+              <div class="rekap-stat-label">📍 Share Lokasi</div>
+              <div class="rekap-stat-count">${item.shareLokasi.length}x</div>
+              <div class="rekap-stat-rp">${shareTotal}</div>
+            </div>
+            <div class="rekap-stat">
+              <div class="rekap-stat-label">🕐 Lembur</div>
+              <div class="rekap-stat-count">${item.lembur.length}x</div>
+              <div class="rekap-stat-rp">${lemburTotal}</div>
+            </div>
+            <div class="rekap-stat">
+              <div class="rekap-stat-label">🟢 Standby</div>
+              <div class="rekap-stat-count">${item.standby.length}x</div>
+              <div class="rekap-stat-rp">${standbyTotal}</div>
+            </div>
+          </div>
+          <button class="btn btn-amber btn-sm" onclick="showPreview(rekapData[${idx}],${idx})" style="margin-top:12px;">👁 Preview &amp; Hapus Item</button>
+        </div>
+      </details>`;
     });
     html+=`<div class="grand-total-bar"><div class="grand-total-label">Total Semua Karyawan — ${d.bulan}</div><div class="grand-total-val">${fmt(grandTotal)}</div></div>`;
     result.innerHTML=html;window.rekapData=d.rekap;
@@ -719,22 +755,42 @@ async function tarikRekap(){
   finally{btn.innerHTML='<span>🔍</span> Tarik Rekap';btn.disabled=false;}
 }
 
-function showPreview(item){
+function showPreview(item,itemIdx){
+  window.previewItemIdx=itemIdx;
   document.getElementById('preview-title').textContent=`Preview — ${item.client.nama}`;
   let html='';
   html+=`<div class="preview-section"><div class="preview-section-title" style="background:rgba(4,169,245,.12);color:var(--accent);">📍 Share Lokasi (${item.shareLokasi.length}x)</div>`;
-  if(item.shareLokasi.length){html+=`<table class="preview-table"><thead><tr><th>No</th><th>Tanggal</th><th>Jam</th><th>Lokasi RS</th><th style="text-align:right">Nilai</th></tr></thead><tbody>`;item.shareLokasi.forEach((sl,i)=>{const w=new Date(sl.waktu_share);html+=`<tr><td>${i+1}</td><td>${w.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</td><td>${w.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</td><td>${sl.rumah_sakit?.nama_rs||'-'}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(sl.harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="4" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.share)}</td></tr></tbody></table>`;}
+  if(item.shareLokasi.length){html+=`<table class="preview-table"><thead><tr><th style="width:30px"></th><th>No</th><th>Tanggal</th><th>Jam</th><th>Lokasi RS</th><th style="text-align:right">Nilai</th></tr></thead><tbody>`;item.shareLokasi.forEach((sl,i)=>{const w=new Date(sl.waktu_share);const delId=`share-${itemIdx}-${i}`;html+=`<tr><td style="padding:6px 4px"><input type="checkbox" id="${delId}" onchange="toggleDelete('${delId}',${itemIdx},'shareLokasi',${i})" value="${i}"></td><td>${i+1}</td><td>${w.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}</td><td>${w.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</td><td>${sl.rumah_sakit?.nama_rs||'-'}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(sl.harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="6" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.share)}</td></tr></tbody></table>`;}
   else html+=`<p style="font-size:13px;color:var(--muted);padding:6px;">Tidak ada data</p>`;html+=`</div>`;
   html+=`<div class="preview-section"><div class="preview-section-title" style="background:rgba(244,194,43,.12);color:var(--warning);">🕐 Lembur (${item.lembur.length}x)</div>`;
-  if(item.lembur.length){html+=`<table class="preview-table"><thead><tr><th>No</th><th>Waktu Foto</th><th>Lokasi RS</th><th>Keterangan</th><th style="text-align:right">Total</th></tr></thead><tbody>`;item.lembur.forEach((l,i)=>{const w=new Date(l.waktu_foto);html+=`<tr><td>${i+1}</td><td>${w.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${l.rumah_sakit?.nama_rs||'-'}</td><td>${l.keterangan||'-'}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(l.total_harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="4" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.lembur)}</td></tr></tbody></table>`;}
+  if(item.lembur.length){html+=`<table class="preview-table"><thead><tr><th style="width:30px"></th><th>No</th><th>Waktu Foto</th><th>Lokasi RS</th><th>Keterangan</th><th style="text-align:right">Total</th></tr></thead><tbody>`;item.lembur.forEach((l,i)=>{const w=new Date(l.waktu_foto);const delId=`lembur-${itemIdx}-${i}`;html+=`<tr><td style="padding:6px 4px"><input type="checkbox" id="${delId}" onchange="toggleDelete('${delId}',${itemIdx},'lembur',${i})" value="${i}"></td><td>${i+1}</td><td>${w.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td><td>${l.rumah_sakit?.nama_rs||'-'}</td><td>${l.keterangan||'-'}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(l.total_harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="5" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.lembur)}</td></tr></tbody></table>`;}
   else html+=`<p style="font-size:13px;color:var(--muted);padding:6px;">Tidak ada data</p>`;html+=`</div>`;
   html+=`<div class="preview-section"><div class="preview-section-title" style="background:rgba(29,233,182,.12);color:var(--success);">🟢 Standby (${item.standby.length}x)</div>`;
-  if(item.standby.length){html+=`<table class="preview-table"><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th style="text-align:right">Tunjangan</th></tr></thead><tbody>`;item.standby.forEach((s,i)=>{const jenis=s.jenis_standby==='hari_raya'?`Hari Raya${s.nama_hari_raya?` (${s.nama_hari_raya})`:''}` :'Hari Minggu';html+=`<tr><td>${i+1}</td><td>${new Date(s.tanggal+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</td><td>${jenis}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(s.harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="3" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.standby)}</td></tr></tbody></table>`;}
+  if(item.standby.length){html+=`<table class="preview-table"><thead><tr><th style="width:30px"></th><th>No</th><th>Tanggal</th><th>Jenis</th><th style="text-align:right">Tunjangan</th></tr></thead><tbody>`;item.standby.forEach((s,i)=>{const jenis=s.jenis_standby==='hari_raya'?`Hari Raya${s.nama_hari_raya?` (${s.nama_hari_raya})`:''}` :'Hari Minggu';const delId=`standby-${itemIdx}-${i}`;html+=`<tr><td style="padding:6px 4px"><input type="checkbox" id="${delId}" onchange="toggleDelete('${delId}',${itemIdx},'standby',${i})" value="${i}"></td><td>${i+1}</td><td>${new Date(s.tanggal+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</td><td>${jenis}</td><td style="text-align:right;font-family:var(--mono);font-weight:600">${fmt(s.harga)}</td></tr>`;});html+=`<tr class="preview-total-row"><td colspan="4" style="text-align:right">TOTAL</td><td style="text-align:right;font-family:var(--mono)">${fmt(item.total.standby)}</td></tr></tbody></table>`;}
   else html+=`<p style="font-size:13px;color:var(--muted);padding:6px;">Tidak ada data</p>`;html+=`</div>`;
   html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:11px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;"><span style="font-size:14px;color:var(--muted);">Grand Total — ${item.client.nama}</span><span style="font-size:22px;font-weight:700;color:var(--accent);font-family:var(--mono);letter-spacing:-0.5px">${fmt(item.total.grand)}</span></div>`;
+  html+=`<p style="font-size:12px;color:var(--muted);margin-top:12px;padding:10px;background:var(--bg2);border-radius:6px;border-left:3px solid var(--warning);">💡 Centang item yang ingin dihapus dari rekapan, kemudian tutup modal ini untuk melihat perubahan di export file</p>`;
   document.getElementById('preview-content').innerHTML=html;openModal('modal-preview');
 }
-async function downloadXlsx(){window.open(`${API}/api/admin/rekap/xlsx?bulan=${document.getElementById('rekap-bulan').value}&token=${TOKEN}`,'_blank');}
+function toggleDelete(checkboxId,itemIdx,type,rowIdx){
+  const key=`${itemIdx}-${type}-${rowIdx}`;
+  if(document.getElementById(checkboxId).checked){
+    rekapDeletedItems.add(key);
+  }else{
+    rekapDeletedItems.delete(key);
+  }
+}
+async function downloadXlsx(){
+  const bulan=document.getElementById('rekap-bulan').value;
+  const filteredRecap=window.rekapData.map((item,itemIdx)=>({
+    ...item,
+    shareLokasi:item.shareLokasi.filter((_,i)=>!rekapDeletedItems.has(`${itemIdx}-shareLokasi-${i}`)),
+    lembur:item.lembur.filter((_,i)=>!rekapDeletedItems.has(`${itemIdx}-lembur-${i}`)),
+    standby:item.standby.filter((_,i)=>!rekapDeletedItems.has(`${itemIdx}-standby-${i}`))
+  }));
+  const delJson=encodeURIComponent(JSON.stringify(filteredRecap));
+  window.open(`${API}/api/admin/rekap/xlsx?bulan=${bulan}&token=${TOKEN}&data=${delJson}`,'_blank');
+}
 
 // ── Karyawan ──────────────────────────────────────────────────────────────────
 async function loadKaryawan(){
