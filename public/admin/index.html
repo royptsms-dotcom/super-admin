@@ -2137,7 +2137,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API = window.location.origin;
+    const API = 'https://complement-schools-sum-retirement.trycloudflare.com';
     let TOKEN = localStorage.getItem('admin_token') || '';
     let USER = JSON.parse(localStorage.getItem('admin_user') || 'null');
     let allUsers = [], allRS = [], allJobs = [], editUserId = null;
@@ -2425,7 +2425,7 @@
         standby: item.standby.filter((_, i) => !rekapDeletedItems.has(`${itemIdx}-standby-${i}`))
       }));
       try {
-        const r = await fetch(`${API}/api/admin/rekap/xlsx`, { method: 'POST', headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ bulan, data: filteredRecap }) });
+        const r = await fetch(`${API}/api/admin/rekap/xlsx`, { method: 'POST', headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ bulan, rekapData: filteredRecap }) });
         if (!r.ok) { const e = await r.json(); toast(e.error || 'Gagal download', 'error'); return; }
         const blob = await r.blob();
         const url = URL.createObjectURL(blob);
