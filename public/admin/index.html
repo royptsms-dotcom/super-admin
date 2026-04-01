@@ -2878,10 +2878,13 @@
       if (prefs.appIcon) {
         const loginIcon = document.getElementById('login-icon');
         if (prefs.appIconType === 'image') {
-          loginIcon.innerHTML = `<img src="${prefs.appIcon}" style="width:54px;height:54px;object-fit:cover;">`;
+          loginIcon.innerHTML = `<img src="${prefs.appIcon}" style="width:54px;height:54px;object-fit:cover;border-radius:12px;">`;
         } else {
           loginIcon.textContent = prefs.appIcon;
         }
+      } else {
+         const loginIcon = document.getElementById('login-icon');
+         loginIcon.innerHTML = `<img src="uePrjVI6.jpg" style="width:54px;height:54px;object-fit:cover;border-radius:12px;">`;
       }
     }
   </script>

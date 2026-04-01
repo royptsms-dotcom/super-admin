@@ -2,6 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const path    = require('path');
 const app     = express();
+const cors    = require('cors');
+
+// Izinkan semua asal frontend untuk mengakses API
+app.use(cors({ origin: '*' }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
