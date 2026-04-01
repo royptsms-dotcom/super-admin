@@ -118,6 +118,7 @@
   <script>
     feather.replace();
 
+    const API = 'https://complement-schools-sum-retirement.trycloudflare.com';
     let admin_token = localStorage.getItem('admin_token');
     let admin_user = JSON.parse(localStorage.getItem('admin_user') || 'null');
     
@@ -142,7 +143,7 @@
         btnRef.innerHTML = '<span class="spinner"></span> Memuat...';
         btnRef.disabled = true;
 
-        const res = await fetch('/api/admin/whatsapp/status', {
+        const res = await fetch(API + '/api/admin/whatsapp/status', {
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
         const data = await res.json();
@@ -189,7 +190,7 @@
 
     async function fetchGroups() {
       try {
-        const res = await fetch('/api/admin/whatsapp/groups', {
+        const res = await fetch(API + '/api/admin/whatsapp/groups', {
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
         const groups = await res.json();
@@ -219,7 +220,7 @@
       try {
         errorMsg.style.display = 'none';
         btnLogout.disabled = true;
-        const res = await fetch('/api/admin/whatsapp/logout', {
+        const res = await fetch(API + '/api/admin/whatsapp/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
