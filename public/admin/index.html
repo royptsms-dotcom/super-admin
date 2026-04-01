@@ -166,7 +166,7 @@
     }
 
     .sidebar-logo-text h1 {
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 700;
       color: var(--text);
       line-height: 1.2;
@@ -174,7 +174,7 @@
     }
 
     .sidebar-logo-text p {
-      font-size: 10px;
+      font-size: 13px;
       color: var(--muted);
       margin-top: 2px;
       font-weight: 400;
@@ -196,7 +196,7 @@
     }
 
     .nav-label {
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
@@ -209,11 +209,11 @@
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0;
       padding: 10px 12px;
       border-radius: 10px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 0; /* collapse whitespace nodes between icon and text */
       font-weight: 500;
       color: var(--muted);
       transition: all .2s;
@@ -225,26 +225,21 @@
       margin-bottom: 1px;
     }
 
-    .nav-item .icon {
-      font-size: 18px;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent);
-      flex-shrink: 0;
-      line-height: 1;
-    }
-
     .nav-item svg.icon {
       width: 18px;
       height: 18px;
       stroke: currentColor;
       flex-shrink: 0;
-      display: block;
-      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
     }
+
+    /* Restore font-size for the text that follows the icon */
+    .nav-item > *:not(svg) {
+      font-size: 16px;
+    }
+
 
     .nav-item:hover {
       background: rgba(4, 169, 245, .1);
@@ -321,7 +316,7 @@
     }
 
     .admin-name {
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--text);
       white-space: nowrap;
@@ -330,7 +325,7 @@
     }
 
     .admin-role {
-      font-size: 11px;
+      font-size: 14px;
       color: var(--muted);
     }
 
@@ -341,7 +336,7 @@
       border: 1px solid rgba(244, 66, 54, .2);
       border-radius: 8px;
       color: var(--danger);
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 500;
       cursor: pointer;
       font-family: var(--font);
@@ -1452,50 +1447,12 @@
     </div>
     <div class="nav-section">
       <div class="nav-label" style="margin-top:8px;">Menu</div>
-      <button class="nav-item" onclick="showPage('rekap',this)"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path
-            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
-          </path>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-          <line x1="12" y1="22.08" x2="12" y2="12"></line>
-        </svg>Rekap Tunjangan</button>
-      <button class="nav-item" onclick="showPage('karyawan',this)"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>Karyawan</button>
-      <button class="nav-item" onclick="showPage('rs',this)"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>Rumah Sakit</button>
-      <button class="nav-item" onclick="showPage('grupwa',this)"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-        </svg>Grup WA</button>
-      <button class="nav-item" onclick="showPage('setting',this)"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <circle cx="12" cy="12" r="3"></circle>
-          <path
-            d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24">
-          </path>
-        </svg>Setting</button>
-      <button class="nav-item" onclick="window.location.href='wa-bot.html'"><svg class="icon" width="18" height="18"
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
-          <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z" />
-          <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
-          <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5z" />
-          <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z" />
-        </svg>Aktivasi Bot</button>
+      <button class="nav-item" onclick="showPage('rekap',this)"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg><span>Rekap Tunjangan</span></button>
+      <button class="nav-item" onclick="showPage('karyawan',this)"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Karyawan</span></button>
+      <button class="nav-item" onclick="showPage('rs',this)"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg><span>Rumah Sakit</span></button>
+      <button class="nav-item" onclick="showPage('grupwa',this)"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg><span>Grup WA</span></button>
+      <button class="nav-item" onclick="showPage('setting',this)"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path></svg><span>Setting</span></button>
+      <button class="nav-item" onclick="window.location.href='wa-bot.html'"><svg class="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"></path><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5z"></path><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"></path></svg><span>Aktivasi Bot</span></button>
     </div>
     <div class="sidebar-bottom">
       <div class="admin-card" onclick="showPage('profil',this)">
