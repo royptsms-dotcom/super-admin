@@ -1,68 +1,120 @@
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode   = require('qrcode-terminal');
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  fetchLatestBaileysVersion,
+  makeInMemoryStore,
+  downloadContentFromMessage,
+} = require('@whiskeysockets/baileys');
+const { Boom } = require('@hapi/boom');
+const pino   = require('pino');
+const fs     = require('fs');
+const path   = require('path');
 const supabase = require('../lib/supabase');
 
 const CONFIG = {
-  GRUP_WA_ID: '6282280585605-1489035825@g.us',
+  GRUP_WA_ID: '6282280585605-1489035825@g.us', // fallback
   TIMEZONE:   'Asia/Jakarta',
+  SESSION_DIR: path.join(__dirname, '../.baileys_auth'),
 };
 
-const client = new Client({
-  authStrategy: new LocalAuth({ clientId: 'monitoring-app' }),
-  puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
-});
+let sock = null;
+let isConnected = false;
 
-client.on('qr', (qr) => {
-  console.log('\n📱 Scan QR code berikut dengan WhatsApp kamu:\n');
-  qrcode.generate(qr, { small: true });
-  console.log('\n⏳ Menunggu scan...\n');
-});
+// ─── KONEKSI ──────────────────────────────────────────────────────────────────
+async function connectWA() {
+  // Buat folder session jika belum ada
+  if (!fs.existsSync(CONFIG.SESSION_DIR)) {
+    fs.mkdirSync(CONFIG.SESSION_DIR, { recursive: true });
+  }
 
-client.on('ready', () => {
-  console.log('✅ WhatsApp terhubung! Bot siap digunakan.');
-  setTimeout(async () => {
-    try {
-      const chats  = await client.getChats();
-      const groups = chats.filter(c => c.isGroup);
-      console.log('\n📋 DAFTAR GRUP YANG BOT BISA AKSES:');
-      console.log('=====================================');
-      groups.forEach(g => console.log(`👥 ${g.name}\n   ID: ${g.id._serialized}\n`));
-      console.log('=====================================\n');
-    } catch (err) {
-      console.error('❌ Error listing groups:', err.message);
+  const { state, saveCreds } = await useMultiFileAuthState(CONFIG.SESSION_DIR);
+  const { version } = await fetchLatestBaileysVersion();
+
+  sock = makeWASocket({
+    version,
+    auth: state,
+    printQRInTerminal: false,
+    logger: pino({ level: 'silent' }), // sembunyikan log verbose
+    browser: ['Tunjangan App', 'Chrome', '1.0.0'],
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
+  });
+
+  // Simpan kredensial saat update
+  sock.ev.on('creds.update', saveCreds);
+
+  // Handle QR manual
+  sock.ev.on('connection.update', ({ qr }) => {
+    if (qr) {
+      const qrcode = require('qrcode-terminal');
+      console.log('\n📱 Scan QR code berikut dengan WhatsApp kamu:\n');
+      qrcode.generate(qr, { small: true });
+      console.log('\n⏳ Menunggu scan...\n');
     }
-  }, 2000);
-});
+  });
 
-client.on('auth_failure', (msg) => { console.error('❌ Auth gagal:', msg); });
-client.on('disconnected', (reason) => {
-  console.warn('⚠️  WhatsApp terputus:', reason);
-  setTimeout(() => client.initialize(), 5000);
-});
+  // Monitor status koneksi
+  sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    if (qr) {
+      console.log('\n📱 Scan QR code di atas dengan WhatsApp kamu\n');
+    }
 
-client.initialize();
+    if (connection === 'close') {
+      isConnected = false;
+      const statusCode = (lastDisconnect?.error instanceof Boom)
+        ? lastDisconnect.error.output?.statusCode
+        : null;
 
-// ─── HELPER: Ambil WA Group ID dari nama job ──────────────────────────────────
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      console.warn(`⚠️  WhatsApp terputus (${statusCode}), reconnect: ${shouldReconnect}`);
+
+      if (shouldReconnect) {
+        console.log('🔄 Mencoba reconnect dalam 5 detik...');
+        setTimeout(connectWA, 5000);
+      } else {
+        console.log('🔴 Sesi expired/logout. Hapus folder session dan restart server untuk scan ulang.');
+      }
+    } else if (connection === 'open') {
+      isConnected = true;
+      console.log('✅ WhatsApp terhubung via Baileys! Bot siap digunakan.');
+      // Print semua grup setelah connect
+      setTimeout(listGrups, 3000);
+    }
+  });
+}
+
+// Print semua grup yang bisa diakses
+async function listGrups() {
+  try {
+    const groups = Object.values(await sock.groupFetchAllParticipating());
+    console.log('\n📋 DAFTAR GRUP YANG BOT BISA AKSES:');
+    console.log('=====================================');
+    groups.forEach(g => console.log(`👥 ${g.subject}\n   ID: ${g.id}\n`));
+    console.log('=====================================\n');
+  } catch (err) {
+    console.error('❌ Error listing groups:', err.message);
+  }
+}
+
+// ─── HELPERS LOOKUP GRUP ──────────────────────────────────────────────────────
 async function getWaGroupIdByJobNama(jobNama) {
   if (!jobNama) return null;
   try {
     const { data: jobData, error: jobErr } = await supabase
       .from('jobs').select('id').eq('nama', jobNama).single();
-
     if (jobErr || !jobData) {
-      console.log(`⚠️  Job "${jobNama}" tidak ditemukan di tabel jobs`);
+      console.log(`⚠️  Job "${jobNama}" tidak ditemukan`);
       return null;
     }
-
     const { data: mapping, error: mapErr } = await supabase
       .from('wa_group_mappings').select('wa_group_id')
       .eq('job_id', jobData.id).single();
-
     if (mapErr || !mapping) {
       console.log(`⚠️  Grup WA untuk job "${jobNama}" belum didaftarkan`);
       return null;
     }
-
     console.log(`✅ Grup WA untuk job "${jobNama}": ${mapping.wa_group_id}`);
     return mapping.wa_group_id;
   } catch (err) {
@@ -71,7 +123,6 @@ async function getWaGroupIdByJobNama(jobNama) {
   }
 }
 
-// ─── HELPER: Ambil WA Group ID dari job_id (integer) ─────────────────────────
 async function getWaGroupIdByJobId(jobId) {
   if (!jobId) return null;
   try {
@@ -81,26 +132,18 @@ async function getWaGroupIdByJobId(jobId) {
     if (error || !data) return null;
     return data.wa_group_id;
   } catch (err) {
-    console.error('❌ getWaGroupIdByJobId error:', err.message);
     return null;
   }
 }
 
-// ─── HELPER: Ambil WA Group ID dari user_id ───────────────────────────────────
 async function getWaGroupIdByUserId(userId) {
   if (!userId) return null;
   try {
-    const { data: user, error: userErr } = await supabase
+    const { data: user, error } = await supabase
       .from('users').select('job').eq('id', userId).single();
-
-    if (userErr || !user || !user.job) {
-      console.log(`⚠️  User ${userId} tidak punya job`);
-      return null;
-    }
-
+    if (error || !user || !user.job) return null;
     return await getWaGroupIdByJobNama(user.job);
   } catch (err) {
-    console.error('❌ getWaGroupIdByUserId error:', err.message);
     return null;
   }
 }
@@ -123,12 +166,16 @@ function formatDurasi(durasiMenit) {
   return `${jam} jam ${menit} menit`;
 }
 
-// ─── KIRIM PESAN & FOTO ───────────────────────────────────────────────────────
+// ─── KIRIM PESAN ──────────────────────────────────────────────────────────────
 async function kirimPesan(pesan, groupId = null) {
   try {
+    if (!isConnected || !sock) {
+      console.error('❌ WhatsApp belum terhubung');
+      return { success: false, error: 'WhatsApp belum terhubung' };
+    }
     const target = groupId || CONFIG.GRUP_WA_ID;
     console.log(`📤 Kirim pesan ke grup: ${target}`);
-    await client.sendMessage(target, pesan);
+    await sock.sendMessage(target, { text: pesan });
     console.log('✅ Pesan terkirim');
     return { success: true };
   } catch (err) {
@@ -137,12 +184,19 @@ async function kirimPesan(pesan, groupId = null) {
   }
 }
 
+// ─── KIRIM FOTO URL ───────────────────────────────────────────────────────────
 async function kirimFotoUrl(fotoUrl, caption, groupId = null) {
   try {
+    if (!isConnected || !sock) {
+      console.error('❌ WhatsApp belum terhubung');
+      return { success: false, error: 'WhatsApp belum terhubung' };
+    }
     const target = groupId || CONFIG.GRUP_WA_ID;
     console.log(`📤 Kirim foto ke grup: ${target}`);
-    const media = await MessageMedia.fromUrl(fotoUrl, { unsafeMime: true });
-    await client.sendMessage(target, media, { caption });
+    await sock.sendMessage(target, {
+      image: { url: fotoUrl },
+      caption,
+    });
     console.log('✅ Foto + caption terkirim');
     return { success: true };
   } catch (err) {
@@ -227,8 +281,11 @@ async function kirimStandby(data, groupId = null) {
   return await kirimPesan(pesan, groupId);
 }
 
+// Inisialisasi koneksi saat module di-load
+connectWA();
+
 module.exports = {
-  client,
+  connectWA,
   kirimShareLokasi,
   kirimLembur,
   kirimStandby,
@@ -237,4 +294,5 @@ module.exports = {
   getWaGroupIdByJobId,
   getWaGroupIdByJobNama,
   getWaGroupIdByUserId,
+  get isConnected() { return isConnected; },
 };

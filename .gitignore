@@ -1,6 +1,5 @@
 node_modules/
 tunjangan-app-win/node_modules/
-.wwebjs_auth/
-.wwebjs_cache/
+.baileys_auth/
 .env
 *.log
