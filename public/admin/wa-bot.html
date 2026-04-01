@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Bot — Admin Dashboard</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    /* Styling Dasar Mengikuti index.html */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #212224; --bg2: #2b2c2f; --bg3: #393b3f; --border: #46484c;
+      --text: rgba(255, 255, 255, 0.8); --muted: #bfbfbf; --accent: #04A9F5;
+      --accent2: #3EBFEA; --success: #1DE9B6; --danger: #F44236; --warning: #F4C22B;
+      --font: 'Open Sans', sans-serif; --shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    [data-theme="light"] {
+      --bg: #f4f7fa; --bg2: #ffffff; --bg3: #f3f5f7; --border: #f1f1f1;
+      --text: #1d2630; --muted: #888;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; padding: 32px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+    .header h2 { font-size: 24px; font-weight: 700; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+    .card-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 18px; }
+    
+    /* QR Section */
+    .qr-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #fff; border-radius: 12px; width: fit-content; margin: 20px auto; min-height: 250px; }
+    #qrcode img { margin-bottom: 10px; }
+    .status-badge { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+    .status-online { background: rgba(29, 233, 182, 0.2); color: var(--success); }
+    .status-offline { background: rgba(244, 66, 54, 0.2); color: var(--danger); }
+    .status-waiting { background: rgba(244, 194, 43, 0.2); color: var(--warning); }
+
+    /* Button */
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; text-transform: uppercase; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-danger { background: rgba(244, 66, 54, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; padding: 12px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); text-transform: uppercase; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .copy-btn { font-size: 10px; padding: 3px 8px; background: var(--bg3); border: 1px solid var(--border); color: var(--accent); border-radius: 4px; cursor: pointer; }
+    
+    .loading { opacity: 0.5; pointer-events: none; }
+    #error-msg { color: var(--danger); margin-top: 10px; text-align: center; display: none; }
+    .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); text-decoration: none; font-weight: 600; margin-bottom: 20px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <a href="index.html" class="back-link">
+      <i data-feather="arrow-left"></i> Kembali ke Dashboard
+    </a>
+
+    <div class="header">
+      <div>
+        <h2>WhatsApp Bot Setting</h2>
+        <p style="color: var(--muted); font-size: 13px; margin-top: 4px;">Kelola pendaftaran nomor Bot dan mapping grup WhatsApp.</p>
+      </div>
+      <div id="status-area">
+        <span class="status-badge status-offline" id="conn-status">Mengecek Status...</span>
+      </div>
+    </div>
+
+    <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+      <!-- QR SCAN SECTION -->
+      <div class="card" id="qr-card">
+        <div class="card-title">Aktivasi Bot (Scan QR)</div>
+        <p style="font-size: 12px; color: var(--muted);">Jika bot belum terhubung atau mau ganti nomor, klik tombol Logout lalu scan QR baru di bawah ini.</p>
+        
+        <div class="qr-container" id="qr-box">
+          <div id="qrcode"></div>
+          <div id="qr-placeholder" style="color: #666; text-align: center;">Mengambil data QR...</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 10px;">
+          <button class="btn btn-danger" onclick="logoutBot()" id="btn-logout">Logout & Ganti Nomor</button>
+          <button class="btn btn-primary" onclick="checkStatus()" id="btn-refresh" style="margin-left: 8px;">Refresh Status</button>
+        </div>
+        <p id="error-msg"></p>
+      </div>
+
+      <!-- SYNC INFO SECTION -->
+      <div class="card">
+        <div class="card-title">Daftar Grup WhatsApp Terdeteksi</div>
+        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">Copy <b>Group ID</b> di bawah ini untuk dimasukkan ke menu <b>Mapping Group WA</b>.</p>
+        
+        <div style="max-height: 400px; overflow-y: auto;">
+          <table id="group-table">
+            <thead>
+              <tr>
+                <th>Nama Grup</th>
+                <th>Group ID</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="group-list">
+              <tr><td colspan="3" style="text-align:center; color: var(--muted);">Menunggu koneksi WhatsApp...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    feather.replace();
+
+    let admin_token = localStorage.getItem('admin_token');
+    let admin_user = JSON.parse(localStorage.getItem('admin_user') || 'null');
+    
+    if (!admin_token || !admin_user || admin_user.role !== 'admin') {
+      window.location.href = 'index.html';
+    }
+
+    const connStatus = document.getElementById('conn-status');
+    const qrBox = document.getElementById('qr-box');
+    const qrcodeDiv = document.getElementById('qrcode');
+    const qrPlaceholder = document.getElementById('qr-placeholder');
+    const groupList = document.getElementById('group-list');
+    const btnLogout = document.getElementById('btn-logout');
+    const errorMsg = document.getElementById('error-msg');
+
+    let currentQr = null;
+    let qrRenderer = new QRCode(qrcodeDiv, { width: 200, height: 200 });
+
+    async function checkStatus() {
+      const btnRef = document.getElementById('btn-refresh');
+      try {
+        btnRef.innerHTML = '<span class="spinner"></span> Memuat...';
+        btnRef.disabled = true;
+
+        const res = await fetch('/api/admin/whatsapp/status', {
+          headers: { 'Authorization': `Bearer ${admin_token}` }
+        });
+        const data = await res.json();
+
+        if (data.isConnected) {
+          connStatus.className = 'status-badge status-online';
+          connStatus.innerText = 'TERHUBUNG';
+          qrcodeDiv.style.display = 'none';
+          qrPlaceholder.style.display = 'block';
+          qrPlaceholder.innerHTML = '<span style="color: var(--success); font-weight: bold;">✅ Bot Aktif</span><br>Siap mengirim laporan';
+          qrBox.style.background = 'transparent';
+          btnLogout.disabled = false;
+          fetchGroups();
+        } else {
+          if (data.qrCode) {
+            connStatus.className = 'status-badge status-waiting';
+            connStatus.innerText = 'MENUNGGU SCAN';
+            qrcodeDiv.style.display = 'block';
+            qrPlaceholder.style.display = 'none';
+            qrBox.style.background = '#fff';
+            
+            if (currentQr !== data.qrCode) {
+              currentQr = data.qrCode;
+              qrRenderer.clear();
+              qrRenderer.makeCode(data.qrCode);
+            }
+          } else {
+            connStatus.className = 'status-badge status-offline';
+            connStatus.innerText = 'MEMULAI SISTEM...';
+            qrcodeDiv.style.display = 'none';
+            qrPlaceholder.style.display = 'block';
+            qrPlaceholder.innerText = 'Menyiapkan QR Code...';
+          }
+          btnLogout.disabled = true;
+          groupList.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--muted);">Hubungkan WhatsApp untuk melihat grup</td></tr>';
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        btnRef.innerHTML = 'Refresh Status';
+        btnRef.disabled = false;
+      }
+    }
+
+    async function fetchGroups() {
+      try {
+        const res = await fetch('/api/admin/whatsapp/groups', {
+          headers: { 'Authorization': `Bearer ${admin_token}` }
+        });
+        const groups = await res.json();
+        
+        if (groups.length === 0) {
+          groupList.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--muted);">Tidak ada grup ditemukan.</td></tr>';
+          return;
+        }
+
+        groupList.innerHTML = groups.map(g => `
+          <tr>
+            <td style="font-weight: 600;">${g.name}</td>
+            <td style="font-family: monospace; font-size: 11px;">${g.id}</td>
+            <td>
+              <button class="copy-btn" onclick="copyId('${g.id}')">Copy ID</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function logoutBot() {
+      if (!confirm('Yakin ingin logout bot? Kamu harus scan ulang QR Code nanti.')) return;
+      
+      try {
+        errorMsg.style.display = 'none';
+        btnLogout.disabled = true;
+        const res = await fetch('/api/admin/whatsapp/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${admin_token}` }
+        });
+        const result = await res.json();
+        // Backend sudah diprogram untuk paksa reset meskipun terjadi socket error
+        alert('Proses reset bot dijalankan. Tunggu sebentar lalu refresh halaman.');
+        checkStatus();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btnLogout.disabled = false;
+      }
+    }
+
+    function copyId(id) {
+      navigator.clipboard.writeText(id);
+      alert('Group ID disalin ke clipboard!');
+    }
+
+    // Refresh manual saja by request
+    checkStatus();
+  </script>
+</body>
+
+</html>

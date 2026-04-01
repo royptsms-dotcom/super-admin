@@ -15,11 +15,12 @@ const supabase = require('../lib/supabase');
 const CONFIG = {
   GRUP_WA_ID: '6282280585605-1489035825@g.us', // fallback
   TIMEZONE:   'Asia/Jakarta',
-  SESSION_DIR: path.join(__dirname, '../.baileys_auth'),
+  SESSION_DIR: path.join(__dirname, '../.baileys_auth_final'),
 };
 
 let sock = null;
 let isConnected = false;
+let qrCode = null; // Simpan QR terbaru dalam bentuk string
 
 // ─── KONEKSI ──────────────────────────────────────────────────────────────────
 async function connectWA() {
@@ -35,11 +36,13 @@ async function connectWA() {
     version,
     auth: state,
     printQRInTerminal: false,
-    logger: pino({ level: 'silent' }), // sembunyikan log verbose
-    browser: ['Tunjangan App', 'Chrome', '1.0.0'],
-    connectTimeoutMs: 60000,
-    defaultQueryTimeoutMs: 60000,
+    logger: pino({ level: 'silent' }),
+    browser: ['Windows', 'Chrome', '121.0.0'],
+    syncFullHistory: false, // Kurangi load saat awal agar tidak stuck
+    connectTimeoutMs: 90000, 
+    defaultQueryTimeoutMs: 90000,
     keepAliveIntervalMs: 30000,
+    generateHighQualityLinkPreview: false,
   });
 
   // Simpan kredensial saat update
@@ -48,10 +51,11 @@ async function connectWA() {
   // Handle QR manual
   sock.ev.on('connection.update', ({ qr }) => {
     if (qr) {
+      qrCode = qr; // Simpan QR untuk web
       const qrcode = require('qrcode-terminal');
       console.log('\n📱 Scan QR code berikut dengan WhatsApp kamu:\n');
       qrcode.generate(qr, { small: true });
-      console.log('\n⏳ Menunggu scan...\n');
+      console.log('\n⏳ Menunggu scan (atau cek di Dashboard Admin)...\n');
     }
   });
 
@@ -78,11 +82,49 @@ async function connectWA() {
       }
     } else if (connection === 'open') {
       isConnected = true;
+      qrCode = null; // Hapus QR jika sudah connect
       console.log('✅ WhatsApp terhubung via Baileys! Bot siap digunakan.');
       // Print semua grup setelah connect
       setTimeout(listGrups, 3000);
     }
   });
+}
+
+// Fungsi Logout untuk ganti nomor
+async function logoutWA() {
+  try {
+    qrCode = null;
+    isConnected = false;
+
+    if (sock) {
+      try {
+        await sock.logout();
+      } catch (e) {
+        console.warn('⚠️  Socket logout failed (already closed?):', e.message);
+        sock.end(); // Paksa tutup socket jika logout gagal
+      }
+    }
+    
+    // Hapus folder session secara paksa
+    if (fs.existsSync(CONFIG.SESSION_DIR)) {
+      try {
+        fs.rmSync(CONFIG.SESSION_DIR, { recursive: true, force: true });
+        console.log('🗑️  Folder session berhasil dihapus.');
+      } catch (rmErr) {
+        console.error('❌ Gagal hapus folder session:', rmErr.message);
+      }
+    }
+
+    console.log('🔴 WhatsApp Logout & Session dihapus. Silakan scan ulang.');
+    
+    // Tunggu sebentar lalu inisialisasi ulang untuk minta QR baru
+    setTimeout(connectWA, 2000);
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Gagal proses logout:', err.message);
+    // Tetap kembalikan success jika folder berhasil dihapus/direset
+    return { success: true, message: 'Session reset forced' };
+  }
 }
 
 // Print semua grup yang bisa diakses
@@ -97,25 +139,51 @@ async function listGrups() {
     console.error('❌ Error listing groups:', err.message);
   }
 }
+// Fetch semua grup (untuk API)
+async function getGrups() {
+  try {
+    if (!isConnected || !sock) return [];
+    const groups = Object.values(await sock.groupFetchAllParticipating());
+    return groups.map(g => ({
+      id: g.id,
+      name: g.subject
+    }));
+  } catch (err) {
+    console.error('❌ Error fetching groups:', err.message);
+    return [];
+  }
+}
 
 // ─── HELPERS LOOKUP GRUP ──────────────────────────────────────────────────────
 async function getWaGroupIdByJobNama(jobNama) {
   if (!jobNama) return null;
+  console.log(`🔍 Mencari Grup WA untuk Job: "${jobNama}"...`);
   try {
-    const { data: jobData, error: jobErr } = await supabase
-      .from('jobs').select('id').eq('nama', jobNama).single();
-    if (jobErr || !jobData) {
-      console.log(`⚠️  Job "${jobNama}" tidak ditemukan`);
+    const { data: jobs, error: jobErr } = await supabase
+      .from('jobs').select('id, nama');
+    
+    if (jobErr || !jobs) {
+      console.log(`⚠️  Gagal ambil daftar jobs:`, jobErr?.message);
       return null;
     }
+
+    // Cari job dengan case-insensitive
+    const targetJob = jobs.find(j => j.nama.toLowerCase() === jobNama.toLowerCase());
+    
+    if (!targetJob) {
+      console.log(`⚠️  Job "${jobNama}" tidak ditemukan di tabel "jobs"`);
+      return null;
+    }
+
     const { data: mapping, error: mapErr } = await supabase
       .from('wa_group_mappings').select('wa_group_id')
-      .eq('job_id', jobData.id).single();
+      .eq('job_id', targetJob.id).single();
+
     if (mapErr || !mapping) {
-      console.log(`⚠️  Grup WA untuk job "${jobNama}" belum didaftarkan`);
+      console.log(`⚠️  Job "${jobNama}" (ID: ${targetJob.id}) belum di-mapping ke Grup WA manapun`);
       return null;
     }
-    console.log(`✅ Grup WA untuk job "${jobNama}": ${mapping.wa_group_id}`);
+    console.log(`✅ Grup WA Ditemukan: ${mapping.wa_group_id} untuk Job "${jobNama}"`);
     return mapping.wa_group_id;
   } catch (err) {
     console.error('❌ getWaGroupIdByJobNama error:', err.message);
@@ -170,16 +238,16 @@ function formatDurasi(durasiMenit) {
 async function kirimPesan(pesan, groupId = null) {
   try {
     if (!isConnected || !sock) {
-      console.error('❌ WhatsApp belum terhubung');
+      console.error('❌ Gagal Kirim: WhatsApp belum terhubung (Perlu Scan QR!)');
       return { success: false, error: 'WhatsApp belum terhubung' };
     }
     const target = groupId || CONFIG.GRUP_WA_ID;
-    console.log(`📤 Kirim pesan ke grup: ${target}`);
+    console.log(`📤 Sedang mengirim pesan ke: ${target}...`);
     await sock.sendMessage(target, { text: pesan });
-    console.log('✅ Pesan terkirim');
+    console.log('✅ Pesan WhatsApp Berhasil Terkirim!');
     return { success: true };
   } catch (err) {
-    console.error('❌ Gagal kirim pesan:', err.message);
+    console.error('❌ Gagal total kirim pesan:', err.message);
     return { success: false, error: err.message };
   }
 }
@@ -294,5 +362,8 @@ module.exports = {
   getWaGroupIdByJobId,
   getWaGroupIdByJobNama,
   getWaGroupIdByUserId,
+  getGrups,
+  logoutWA,
   get isConnected() { return isConnected; },
+  get qrCode() { return qrCode; }
 };

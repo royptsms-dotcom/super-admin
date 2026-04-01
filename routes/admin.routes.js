@@ -4,6 +4,7 @@ const supabase  = require('../lib/supabase');
 const auth      = require('../middleware/auth');
 const ExcelJS   = require('exceljs');
 const bcrypt    = require('bcryptjs');
+const whatsapp  = require('../services/whatsapp.service');
 
 function adminOnly(req, res, next) {
   if (req.user.role !== 'admin')
@@ -485,6 +486,24 @@ router.post('/config-upsert', auth, adminOnly, async (req, res) => {
     if (result.error) return res.status(400).json({ error: result.error.message });
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── WHATSAPP BOT MANAGEMENT ──────────────────────────────────────────────
+router.get('/whatsapp/status', auth, adminOnly, (req, res) => {
+  res.json({
+    isConnected: whatsapp.isConnected,
+    qrCode: whatsapp.qrCode
+  });
+});
+
+router.post('/whatsapp/logout', auth, adminOnly, async (req, res) => {
+  const result = await whatsapp.logoutWA();
+  res.json(result);
+});
+
+router.get('/whatsapp/groups', auth, adminOnly, async (req, res) => {
+  const groups = await whatsapp.getGrups();
+  res.json(groups);
 });
 
 module.exports = router;

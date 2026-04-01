@@ -69,6 +69,9 @@ echo   Admin Dashboard : http://%WIN_IP%:3000/admin
 echo   API Server      : http://%WIN_IP%:3000
 echo   Expo Metro      : exp://%WIN_IP%:8080
 echo.
+echo   Membuka Aktivasi Bot di Browser...
+start http://localhost:3000/admin/wa-bot.html
+echo.
 echo   Pastikan HP terhubung WiFi yang sama!
 echo ============================================
 echo.

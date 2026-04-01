@@ -10,6 +10,8 @@
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%2304A9F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z'/%3E%3Cpath d='M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z'/%3E%3Cpath d='M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5z'/%3E%3Cpath d='M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z'/%3E%3Cpath d='M14 14.5c0 .83.67 1.5 1.5 1.5h5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5h-5c-.83 0-1.5.67-1.5 1.5z'/%3E%3Cpath d='M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z'/%3E%3Cpath d='M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z'/%3E%3Cpath d='M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z'/%3E%3C/svg%3E">
   <style>
     *,
     *::before,
@@ -84,36 +86,45 @@
       background: #3f4d67;
       border-right: none;
     }
+
     [data-theme="light"] .sidebar .sidebar-logo-text h1,
     [data-theme="light"] .sidebar .admin-name {
       color: #fff;
     }
+
     [data-theme="light"] .sidebar .sidebar-logo-text p,
     [data-theme="light"] .sidebar .nav-label,
     [data-theme="light"] .sidebar .admin-role {
       color: #72819a;
     }
+
     [data-theme="light"] .sidebar .nav-item {
       color: #a9b7d0;
     }
+
     [data-theme="light"] .sidebar .nav-item:hover,
     [data-theme="light"] .sidebar .nav-item.active {
       color: #fff;
       background: rgba(4, 169, 245, 0.1);
     }
+
     [data-theme="light"] .sidebar .sidebar-logo {
       border-bottom-color: rgba(255, 255, 255, 0.05);
     }
+
     [data-theme="light"] .sidebar-bottom {
       border-top-color: rgba(255, 255, 255, 0.05);
     }
+
     [data-theme="light"] .sidebar .admin-card {
       background: rgba(255, 255, 255, 0.05);
       border-color: rgba(255, 255, 255, 0.1);
     }
+
     [data-theme="light"] .sidebar .admin-card:hover {
       background: rgba(255, 255, 255, 0.1);
     }
+
     [data-theme="light"] .sidebar .admin-card.active {
       border-color: var(--accent);
       background: rgba(255, 255, 255, 0.08);
@@ -1441,13 +1452,14 @@
     </div>
     <div class="nav-section">
       <div class="nav-label" style="margin-top:8px;">Menu</div>
-      <button class="nav-item active" onclick="showPage('rekap',this)"><svg class="icon" width="18" height="18"
+      <button class="nav-item" onclick="showPage('rekap',this)"><svg class="icon" width="18" height="18"
           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round">
-          <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
-          <line x1="12" y1="12" x2="20" y2="7.5"></line>
-          <line x1="12" y1="12" x2="12" y2="21"></line>
-          <line x1="12" y1="12" x2="4" y2="7.5"></line>
+          <path
+            d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+          </path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
         </svg>Rekap Tunjangan</button>
       <button class="nav-item" onclick="showPage('karyawan',this)"><svg class="icon" width="18" height="18"
           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1460,10 +1472,8 @@
       <button class="nav-item" onclick="showPage('rs',this)"><svg class="icon" width="18" height="18"
           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
           stroke-linejoin="round">
-          <circle cx="12" cy="12" r="1"></circle>
-          <path d="M12 1v6m0 6v6"></path>
-          <path d="M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6"></path>
-          <path d="M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path>
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
         </svg>Rumah Sakit</button>
       <button class="nav-item" onclick="showPage('grupwa',this)"><svg class="icon" width="18" height="18"
           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1478,6 +1488,14 @@
             d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24">
           </path>
         </svg>Setting</button>
+      <button class="nav-item" onclick="window.location.href='wa-bot.html'"><svg class="icon" width="18" height="18"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z" />
+          <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" />
+          <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5z" />
+          <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z" />
+        </svg>Aktivasi Bot</button>
     </div>
     <div class="sidebar-bottom">
       <div class="admin-card" onclick="showPage('profil',this)">
@@ -1628,17 +1646,21 @@
         <div style="display:flex;gap:10px;align-items:flex-end;">
           <div style="flex:1;"><label class="form-label">URL Sheet Database (CSV/JSON)</label><input class="form-input"
               id="link-rs-db" placeholder="https://docs.google.com/spreadsheets/d/..." style="font-size:12px;"></div>
-          <button class="btn btn-primary btn-sm" onclick="simpanLinkRS()" style="white-space:nowrap;"><i class="ti ti-device-floppy"></i> Simpan
+          <button class="btn btn-primary btn-sm" onclick="simpanLinkRS()" style="white-space:nowrap;"><i
+              class="ti ti-device-floppy"></i> Simpan
             Link</button>
-          <button class="btn btn-success btn-sm" onclick="syncRS()" style="white-space:nowrap;"><i class="ti ti-refresh"></i> Sync Manual</button>
+          <button class="btn btn-success btn-sm" onclick="syncRS()" style="white-space:nowrap;"><i
+              class="ti ti-refresh"></i> Sync Manual</button>
         </div>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div class="card-title" style="margin-bottom:0;"><i class="ti ti-building-hospital" style="margin-right: 8px; color: var(--accent); font-size: 18px;"></i> Daftar Rumah Sakit</div>
+          <div class="card-title" style="margin-bottom:0;"><i class="ti ti-building-hospital"
+              style="margin-right: 8px; color: var(--accent); font-size: 18px;"></i> Daftar Rumah Sakit</div>
           <div style="position: relative; width: 240px;">
             <i class="ti ti-search" style="position: absolute; left: 12px; top: 12px; color: var(--muted);"></i>
-            <input class="form-input" id="cari-rs" placeholder="Cari RS..." oninput="filterRS()" style="padding-left: 36px;">
+            <input class="form-input" id="cari-rs" placeholder="Cari RS..." oninput="filterRS()"
+              style="padding-left: 36px;">
           </div>
         </div>
         <div class="table-wrap">
@@ -1729,28 +1751,34 @@
                 (default: 7)</span></div>
           </div>
           <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
-            <div class="form-group"><label class="form-label"><i class="ti ti-clock" style="margin-right: 4px;"></i> Timeout Submit Lembur (detik)</label>
+            <div class="form-group"><label class="form-label"><i class="ti ti-clock" style="margin-right: 4px;"></i>
+                Timeout Submit Lembur (detik)</label>
               <div style="display:flex;align-items:center;gap:8px;"><input class="form-input" id="s-lembur-timeout"
                   type="number" min="10" max="300" style="width:80px;" placeholder="600"><span
                   style="color:var(--muted);font-size:12px;">(default: 10 menit = 600 detik)</span></div>
-              <p style="font-size:11px;color:var(--muted);margin-top:6px;"><i class="ti ti-bulb" style="color: var(--warning);"></i> Jika user tidak submit dalam waktu ini,
+              <p style="font-size:11px;color:var(--muted);margin-top:6px;"><i class="ti ti-bulb"
+                  style="color: var(--warning);"></i> Jika user tidak submit dalam waktu ini,
                 form akan auto-cancel minta kompil ulang</p>
             </div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="simpanSetting()"><i class="ti ti-device-floppy"></i> Simpan Setting</button>
+          <button class="btn btn-primary btn-sm" onclick="simpanSetting()"><i class="ti ti-device-floppy"></i> Simpan
+            Setting</button>
         </div>
         <!-- Kolom 2: Tarif Standby -->
         <div class="card">
-          <div class="card-title"><i class="ti ti-pause" style="margin-right: 8px; color: var(--accent);"></i> Tarif Standby</div>
+          <div class="card-title"><i class="ti ti-pause" style="margin-right: 8px; color: var(--accent);"></i> Tarif
+            Standby</div>
           <div class="form-group"><label class="form-label">Tunjangan hari Minggu (Rp)</label><input class="form-input"
               id="s-standby-minggu" type="number"></div>
           <div class="form-group"><label class="form-label">Tunjangan hari raya (Rp)</label><input class="form-input"
               id="s-standby-raya" type="number"></div>
-          <button class="btn btn-primary btn-sm" onclick="simpanSetting()"><i class="ti ti-device-floppy"></i> Simpan Setting</button>
+          <button class="btn btn-primary btn-sm" onclick="simpanSetting()"><i class="ti ti-device-floppy"></i> Simpan
+            Setting</button>
         </div>
         <!-- Kolom 3: Kelola Job -->
         <div class="card">
-          <div class="card-title"><i class="ti ti-briefcase" style="margin-right: 8px; color: var(--accent);"></i> Kelola Job / Jabatan</div>
+          <div class="card-title"><i class="ti ti-briefcase" style="margin-right: 8px; color: var(--accent);"></i>
+            Kelola Job / Jabatan</div>
           <div style="display:flex;gap:8px;margin-bottom:14px;">
             <input class="form-input" id="input-job-baru" placeholder="Nama job baru..."
               onkeydown="if(event.key==='Enter')tambahJob()">
@@ -1759,7 +1787,8 @@
           <div id="job-chips" style="display:flex;flex-wrap:wrap;min-height:36px;">
             <span style="color:var(--muted);font-size:13px;">Memuat...</span>
           </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:10px;"><i class="ti ti-bulb" style="color: var(--warning);"></i> Klik ✕ untuk hapus job. Job yang dihapus
+          <p style="font-size:11px;color:var(--muted);margin-top:10px;"><i class="ti ti-bulb"
+              style="color: var(--warning);"></i> Klik ✕ untuk hapus job. Job yang dihapus
             tidak otomatis mengubah data karyawan.</p>
         </div>
       </div>
@@ -2068,26 +2097,37 @@
         <!-- ID Card Preview -->
         <div
           style="width:340px;background:#fff;border:2px solid rgba(4,169,245,.2);border-radius:16px;padding:20px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.05);display:flex;flex-direction:column;align-items:center;">
-          <div style="width:100%;height:220px;margin-bottom:12px;background:#f8f9fa;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
+          <div
+            style="width:100%;height:220px;margin-bottom:12px;background:#f8f9fa;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">
             <img id="idcard-foto" src="" style="width:100%;height:100%;object-fit:contain;">
           </div>
-          <div style="width:100%;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
-            <div id="idcard-logo" style="max-height:35px;max-width:100%;display:flex;align-items:center;justify-content:center;font-size:28px;">💼</div>
-            <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:4px;line-height:1.2;" id="idcard-perusahaan">Nama Perusahaan</div>
+          <div
+            style="width:100%;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
+            <div id="idcard-logo"
+              style="max-height:35px;max-width:100%;display:flex;align-items:center;justify-content:center;font-size:28px;">
+              💼</div>
+            <div
+              style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:4px;line-height:1.2;"
+              id="idcard-perusahaan">Nama Perusahaan</div>
           </div>
           <div style="width:100%;border-top:1px dashed rgba(4,169,245,.2);padding-top:12px;">
-            <div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:3px;font-weight:700;" id="idcard-id">ID KARYAWAN: 001</div>
-            <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;line-height:1.1;text-transform:uppercase;" id="idcard-nama">-</div>
-            <div style="font-size:12px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:1px;" id="idcard-job">-</div>
+            <div style="font-size:10px;color:var(--accent);font-family:var(--mono);margin-bottom:3px;font-weight:700;"
+              id="idcard-id">ID KARYAWAN: 001</div>
+            <div
+              style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;line-height:1.1;text-transform:uppercase;"
+              id="idcard-nama">-</div>
+            <div
+              style="font-size:12px;font-weight:800;color:var(--success);text-transform:uppercase;letter-spacing:1px;"
+              id="idcard-job">-</div>
           </div>
         </div>
         <!-- Preview Options -->
         <div style="flex:1;max-width:300px;">
           <div class="form-group"><label class="form-label">Tindakan</label></div>
           <div style="display:flex;flex-direction:column;gap:12px;">
-            <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="printNameTag()"><svg width="18" height="18"
-                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" style="margin-right:8px;display:inline;">
+            <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="printNameTag()"><svg width="18"
+                height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;display:inline;">
                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
               </svg>CETAK NAME TAG SEKARANG</button>
@@ -2102,7 +2142,8 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-idcard')">TUTUP PREVIEW</button></div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-idcard')">TUTUP
+          PREVIEW</button></div>
     </div>
   </div>
 
@@ -2229,7 +2270,7 @@
       const loginIcon = document.getElementById('login-icon');
       const iconSelect = document.getElementById('app-icon-select');
       if (!logo || !loginIcon) return;
-      
+
       if (type === 'image') {
         const imgHtml = `<img src="${val}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
         logo.innerHTML = imgHtml;
@@ -2256,8 +2297,8 @@
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const btn = document.getElementById('theme-topbtn');
       if (btn) {
-        btn.innerHTML = isDark ? 
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f4c22b;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' : 
+        btn.innerHTML = isDark ?
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f4c22b;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' :
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #3f4d67;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
       }
     }
@@ -2500,19 +2541,19 @@
       const user = allUsers.find(u => u.id === userId);
       if (!user) return;
       previewUserId = userId;
-      
+
       const appNama = document.getElementById('app-nama')?.textContent || 'S.M.S';
       const logoIcon = document.getElementById('logo-icon')?.innerHTML || '💼';
-      
+
       document.getElementById('idcard-id').textContent = (user.employee_id || '-');
       document.getElementById('idcard-nama').textContent = user.nama || '-';
       document.getElementById('idcard-job').textContent = user.job ? user.job.toUpperCase() : '-';
-      
+
       const logoPreview = document.getElementById('idcard-logo');
       const namePreview = document.getElementById('idcard-perusahaan');
       if (logoPreview) logoPreview.innerHTML = logoIcon;
       if (namePreview) namePreview.textContent = appNama;
-      
+
       const fotoUrl = user.foto_url || '';
       document.getElementById('idcard-foto').src = fotoUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="rgba(4,169,245,.3)" stroke-width="1"%3E%3Ccircle cx="12" cy="8" r="4"/%3E%3Cpath d="M4 20c0-4 3.6-8 8-8s8 4 8 8"/%3E%3C/svg%3E';
       openModal('modal-idcard');
@@ -2851,11 +2892,11 @@
 
     // ── UI ────────────────────────────────────────────────────────────────────────
     function showPage(name, el) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-      document.querySelectorAll('.nav-item, .admin-card').forEach(n => n.classList.remove('active')); 
-      
-      document.getElementById(`page-${name}`).classList.add('active'); 
-      
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item, .admin-card').forEach(n => n.classList.remove('active'));
+
+      document.getElementById(`page-${name}`).classList.add('active');
+
       if (el) {
         el.classList.add('active');
       } else {
@@ -2864,7 +2905,7 @@
         if (nav) nav.classList.add('active');
         if (name === 'profil') document.querySelector('.admin-card').classList.add('active');
       }
-      
+
       if (name === 'grupwa') { loadGrupWA(); renderGroupwaJobDropdown(); }
     }
     function openModal(id) { document.getElementById(id).classList.add('open'); }
