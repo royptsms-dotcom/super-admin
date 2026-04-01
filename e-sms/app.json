@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "tunjangan-app-win",
-    "slug": "tunjangan-app-win",
+    "name": "E-SMS",
+    "slug": "e-sms",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

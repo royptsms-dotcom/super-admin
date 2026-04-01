@@ -48,7 +48,7 @@ export default function LoginScreen() {
         {/* Logo */}
         <View style={styles.logoBox}>
           <Text style={styles.logoIcon}>💼</Text>
-          <Text style={styles.logoTitle}>Tunjangan App</Text>
+          <Text style={styles.logoTitle}>E-SMS</Text>
           <Text style={styles.logoSub}>Monitoring Karyawan</Text>
         </View>
 

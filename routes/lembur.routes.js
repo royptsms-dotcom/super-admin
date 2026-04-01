@@ -211,6 +211,8 @@ router.post('/submit', auth, async (req, res) => {
       taggedNama = tagUsers.map(u => u.nama);
     }
 
+    const groupId = await wa.getWaGroupIdByUserId(req.user.id);
+
     const waResult = await wa.kirimLembur({
       namaClient:   req.user.nama,
       namaRS:       lembur.rumah_sakit.nama_rs,
@@ -223,7 +225,7 @@ router.post('/submit', auth, async (req, res) => {
       infoHarga,
       taggedUsers:  taggedNama,
       tanggalLembur,
-    });
+    }, groupId);
 
     await supabase.from('lembur').update({ status_wa: waResult.success ? 'sent' : 'failed' }).eq('id', lembur_id);
     await supabase.from('wa_log').insert({

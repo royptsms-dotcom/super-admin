@@ -59,11 +59,20 @@ router.get('/setting', auth, adminOnly, async (req, res) => {
 router.patch('/setting', auth, adminOnly, async (req, res) => {
   try {
     const updates = req.body;
+    console.log('--- UPDATING SETTINGS ---', updates);
     for (const [key, value] of Object.entries(updates)) {
-      await supabase.from('config').update({ value: String(value) }).eq('key', key);
+      if (!key) continue;
+      const { error } = await supabase.from('config').upsert({ key, value: String(value) }, { onConflict: 'key' });
+      if (error) {
+        console.error(`Gagal update config [${key}]:`, error);
+        return res.status(400).json({ error: `Gagal simpan setting ${key}: ${error.message}` });
+      }
     }
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { 
+    console.error('Crash PATCH setting:', err);
+    res.status(500).json({ error: err.message }); 
+  }
 });
 
 router.patch('/rs/:id', auth, adminOnly, async (req, res) => {
@@ -79,7 +88,7 @@ router.patch('/rs/:id', auth, adminOnly, async (req, res) => {
 
 router.get('/rs', auth, adminOnly, async (req, res) => {
   const { data, error } = await supabase
-    .from('rumah_sakit').select('id, kode_rs, nama_rs, harga_share_lokasi, is_active').order('nama_rs');
+    .from('rumah_sakit').select('id, kode_rs, nama_rs, harga_share_lokasi, is_active').eq('is_active', true).order('nama_rs');
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
@@ -248,19 +257,39 @@ router.post('/users', auth, adminOnly, async (req, res) => {
 });
 
 router.patch('/users/:id', auth, adminOnly, async (req, res) => {
-  const { nama, no_wa, role, is_active, employee_id, password, job } = req.body;
-  const updateData = {};
-  if (nama        !== undefined) updateData.nama        = nama;
-  if (no_wa       !== undefined) updateData.no_wa       = no_wa;
-  if (role        !== undefined) updateData.role        = role;
-  if (is_active   !== undefined) updateData.is_active   = is_active;
-  if (employee_id !== undefined) updateData.employee_id = employee_id;
-  if (job         !== undefined) updateData.job         = job;
-  if (password) updateData.password_hash = await bcrypt.hash(password, 10);
-  const { data, error } = await supabase
-    .from('users').update(updateData).eq('id', req.params.id).select().single();
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ success: true, data });
+  try {
+    const { nama, no_wa, role, is_active, employee_id, password, job, email } = req.body;
+    const { id } = req.params;
+    
+    const updateData = {};
+    if (nama !== undefined) updateData.nama = nama;
+    if (no_wa !== undefined) updateData.no_wa = no_wa;
+    if (role !== undefined) updateData.role = role;
+    if (is_active !== undefined) updateData.is_active = is_active;
+    if (employee_id !== undefined) updateData.employee_id = employee_id;
+    if (job !== undefined) updateData.job = job;
+    if (email !== undefined) updateData.email = email.toLowerCase();
+    if (password) updateData.password_hash = await bcrypt.hash(password, 10);
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      if (error.code === '23505') return res.status(400).json({ error: 'Email sudah terdaftar untuk pengguna lain' });
+      return res.status(400).json({ error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ error: `Karyawan dengan ID ${id} tidak ditemukan di database` });
+    }
+
+    res.json({ success: true, data: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.delete('/users/:id', auth, adminOnly, async (req, res) => {
@@ -361,16 +390,14 @@ router.get('/rekap', auth, adminOnly, async (req, res) => {
 });
 
 // ─── REKAP XLSX ───────────────────────────────────────────────────────────────
-router.get('/rekap/xlsx', auth, adminOnly, async (req, res) => {
+router.post('/rekap/xlsx', auth, adminOnly, async (req, res) => {
   try {
-    const { bulan } = req.query;
-    if (!bulan) return res.status(400).json({ error: 'Parameter bulan wajib (format: 2026-01)' });
+    const { bulan, rekapData } = req.body;
+    if (!bulan || !rekapData) return res.status(400).json({ error: 'Parameter bulan dan rekapData wajib' });
+    
     const awal      = `${bulan}-01`;
-    const akhir     = new Date(new Date(awal).getFullYear(), new Date(awal).getMonth() + 1, 0).toISOString().split('T')[0];
     const namaBulan = new Date(awal).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-    const { data: clients } = await supabase
-      .from('users').select('id, nama, employee_id, job')
-      .eq('role', 'client').eq('is_active', true).order('nama');
+    
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Tunjangan App'; workbook.created = new Date();
     const C_SHARE='FF4361EE',C_LEMBUR='FFFF8C00',C_STANDBY='FF2DC653',C_TOTAL='FF1A1A2E',C_WHITE='FFFFFFFF',C_ALT='FFF8F9FF';
@@ -378,8 +405,8 @@ router.get('/rekap/xlsx', auth, adminOnly, async (req, res) => {
     const dStyle=(alt=false)=>({font:{size:10},fill:{type:'pattern',pattern:'solid',fgColor:{argb:alt?C_ALT:C_WHITE}},alignment:{vertical:'middle',wrapText:true},border:{top:{style:'hair'},bottom:{style:'hair'},left:{style:'hair'},right:{style:'hair'}}});
     const rStyle=(alt=false)=>({...dStyle(alt),numFmt:'"Rp"#,##0',alignment:{horizontal:'right',vertical:'middle'}});
 
-    for (const client of clients) {
-      const { shareLokasi, lembur, standby, total } = await getRekapClient(client, awal, akhir);
+    for (const item of rekapData) {
+      const { client, shareLokasi, lembur, standby, total } = item;
       const sheetName = client.nama.replace(/[:\\\/\?\*\[\]]/g,'').substring(0,31);
       const sheet = workbook.addWorksheet(sheetName);
       let r=1;
@@ -417,6 +444,47 @@ router.get('/rekap/xlsx', auth, adminOnly, async (req, res) => {
     res.setHeader('Content-Disposition',`attachment; filename="Rekap_Tunjangan_${bulan}.xlsx"`);
     await workbook.xlsx.write(res);res.end();
   } catch (err) { console.error('Error generate XLSX:', err); res.status(500).json({ error: err.message }); }
+});
+// ─── RS CONFIG & SYNC ─────────────────────────────────────────────────────────
+router.get('/rs-config', auth, adminOnly, async (req, res) => {
+  const { data: urlData } = await supabase
+    .from('config').select('value').eq('key', 'google_sheets_url').single();
+  const { data: syncData } = await supabase
+    .from('config').select('value').eq('key', 'last_rs_sync').single();
+  res.json({
+    url: urlData?.value || '',
+    last_sync: syncData?.value || null,
+  });
+});
+ 
+router.post('/rs-sync', auth, adminOnly, async (req, res) => {
+  try {
+    const { url } = req.body;
+    const { syncRumahSakit } = require('../services/google-sheets.service');
+    const result = await syncRumahSakit(url || null);
+    res.json(result);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/admin/config-upsert
+router.post('/config-upsert', auth, adminOnly, async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key) return res.status(400).json({ error: 'Key wajib diisi' });
+    
+    // Check if exists
+    const { data: existing } = await supabase.from('config').select('key').eq('key', key).single();
+    
+    let result;
+    if (existing) {
+      result = await supabase.from('config').update({ value: String(value) }).eq('key', key);
+    } else {
+      result = await supabase.from('config').insert({ key, value: String(value) });
+    }
+    
+    if (result.error) return res.status(400).json({ error: result.error.message });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;

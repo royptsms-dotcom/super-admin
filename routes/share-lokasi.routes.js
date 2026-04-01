@@ -54,6 +54,8 @@ router.post('/', auth, async (req, res) => {
       taggedNama = tagUsers.map(u => u.nama);
     }
 
+   const groupId = await wa.getWaGroupIdByUserId(req.user.id);
+
     // Kirim ke grup WA
     const waResult = await wa.kirimShareLokasi({
       namaClient:  req.user.nama,
@@ -63,7 +65,7 @@ router.post('/', auth, async (req, res) => {
       hargaRS:     rs.harga_share_lokasi,
       keterangan,
       taggedUsers: taggedNama,
-    });
+    }, groupId);
 
     // Update status WA
     await supabase

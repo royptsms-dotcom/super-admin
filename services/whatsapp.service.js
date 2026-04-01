@@ -1,5 +1,5 @@
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const qrcode   = require('qrcode-terminal');
 const supabase = require('../lib/supabase');
 
 const CONFIG = {
@@ -17,24 +17,101 @@ client.on('qr', (qr) => {
   qrcode.generate(qr, { small: true });
   console.log('\n⏳ Menunggu scan...\n');
 });
-client.on('ready', () => { console.log('✅ WhatsApp terhubung! Bot siap digunakan.'); });
+
+client.on('ready', () => {
+  console.log('✅ WhatsApp terhubung! Bot siap digunakan.');
+  setTimeout(async () => {
+    try {
+      const chats  = await client.getChats();
+      const groups = chats.filter(c => c.isGroup);
+      console.log('\n📋 DAFTAR GRUP YANG BOT BISA AKSES:');
+      console.log('=====================================');
+      groups.forEach(g => console.log(`👥 ${g.name}\n   ID: ${g.id._serialized}\n`));
+      console.log('=====================================\n');
+    } catch (err) {
+      console.error('❌ Error listing groups:', err.message);
+    }
+  }, 2000);
+});
+
 client.on('auth_failure', (msg) => { console.error('❌ Auth gagal:', msg); });
 client.on('disconnected', (reason) => {
   console.warn('⚠️  WhatsApp terputus:', reason);
   setTimeout(() => client.initialize(), 5000);
 });
+
 client.initialize();
 
+// ─── HELPER: Ambil WA Group ID dari nama job ──────────────────────────────────
+async function getWaGroupIdByJobNama(jobNama) {
+  if (!jobNama) return null;
+  try {
+    const { data: jobData, error: jobErr } = await supabase
+      .from('jobs').select('id').eq('nama', jobNama).single();
+
+    if (jobErr || !jobData) {
+      console.log(`⚠️  Job "${jobNama}" tidak ditemukan di tabel jobs`);
+      return null;
+    }
+
+    const { data: mapping, error: mapErr } = await supabase
+      .from('wa_group_mappings').select('wa_group_id')
+      .eq('job_id', jobData.id).single();
+
+    if (mapErr || !mapping) {
+      console.log(`⚠️  Grup WA untuk job "${jobNama}" belum didaftarkan`);
+      return null;
+    }
+
+    console.log(`✅ Grup WA untuk job "${jobNama}": ${mapping.wa_group_id}`);
+    return mapping.wa_group_id;
+  } catch (err) {
+    console.error('❌ getWaGroupIdByJobNama error:', err.message);
+    return null;
+  }
+}
+
+// ─── HELPER: Ambil WA Group ID dari job_id (integer) ─────────────────────────
+async function getWaGroupIdByJobId(jobId) {
+  if (!jobId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('wa_group_mappings').select('wa_group_id')
+      .eq('job_id', jobId).single();
+    if (error || !data) return null;
+    return data.wa_group_id;
+  } catch (err) {
+    console.error('❌ getWaGroupIdByJobId error:', err.message);
+    return null;
+  }
+}
+
+// ─── HELPER: Ambil WA Group ID dari user_id ───────────────────────────────────
+async function getWaGroupIdByUserId(userId) {
+  if (!userId) return null;
+  try {
+    const { data: user, error: userErr } = await supabase
+      .from('users').select('job').eq('id', userId).single();
+
+    if (userErr || !user || !user.job) {
+      console.log(`⚠️  User ${userId} tidak punya job`);
+      return null;
+    }
+
+    return await getWaGroupIdByJobNama(user.job);
+  } catch (err) {
+    console.error('❌ getWaGroupIdByUserId error:', err.message);
+    return null;
+  }
+}
+
+// ─── FORMAT HELPERS ───────────────────────────────────────────────────────────
 function formatWaktu(date = new Date()) {
   return new Intl.DateTimeFormat('id-ID', {
     timeZone: CONFIG.TIMEZONE,
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   }).format(date);
-}
-
-function formatRupiah(angka) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka || 0);
 }
 
 function formatDurasi(durasiMenit) {
@@ -46,11 +123,13 @@ function formatDurasi(durasiMenit) {
   return `${jam} jam ${menit} menit`;
 }
 
+// ─── KIRIM PESAN & FOTO ───────────────────────────────────────────────────────
 async function kirimPesan(pesan, groupId = null) {
   try {
-    const targetGroup = groupId || CONFIG.GRUP_WA_ID;
-    await client.sendMessage(targetGroup, pesan);
-    console.log('✅ Pesan terkirim ke grup WA');
+    const target = groupId || CONFIG.GRUP_WA_ID;
+    console.log(`📤 Kirim pesan ke grup: ${target}`);
+    await client.sendMessage(target, pesan);
+    console.log('✅ Pesan terkirim');
     return { success: true };
   } catch (err) {
     console.error('❌ Gagal kirim pesan:', err.message);
@@ -60,10 +139,11 @@ async function kirimPesan(pesan, groupId = null) {
 
 async function kirimFotoUrl(fotoUrl, caption, groupId = null) {
   try {
-    const targetGroup = groupId || CONFIG.GRUP_WA_ID;
+    const target = groupId || CONFIG.GRUP_WA_ID;
+    console.log(`📤 Kirim foto ke grup: ${target}`);
     const media = await MessageMedia.fromUrl(fotoUrl, { unsafeMime: true });
-    await client.sendMessage(targetGroup, media, { caption });
-    console.log('✅ Foto + caption terkirim ke grup WA');
+    await client.sendMessage(target, media, { caption });
+    console.log('✅ Foto + caption terkirim');
     return { success: true };
   } catch (err) {
     console.error('❌ Gagal kirim foto:', err.message);
@@ -80,9 +160,9 @@ async function kirimShareLokasi(data, groupId = null) {
   if (data.taggedUsers && data.taggedUsers.length > 0)
     bagianTag = `\n👥 *Bersama:* ${data.taggedUsers.map(n => `@${n}`).join(', ')}`;
 
-  let bagianKeterangan = '';
+  let bagianKet = '';
   if (data.keterangan)
-    bagianKeterangan = `\n📝 *Keterangan:* ${data.keterangan}`;
+    bagianKet = `\n📝 *Keterangan:* ${data.keterangan}`;
 
   const pesan =
     `📍 *SHARE LOKASI*\n` +
@@ -90,7 +170,7 @@ async function kirimShareLokasi(data, groupId = null) {
     `👤 *Nama:* ${data.namaClient}\n` +
     `🏥 *Lokasi RS:* ${data.namaRS}\n` +
     `🕐 *Waktu:* ${waktu}` +
-    bagianTag + bagianKeterangan + '\n' +
+    bagianTag + bagianKet + '\n' +
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `🗺️ *Maps:* ${mapsUrl}`;
 
@@ -100,19 +180,17 @@ async function kirimShareLokasi(data, groupId = null) {
 // ─── LEMBUR ───────────────────────────────────────────────────────────────────
 async function kirimLembur(data, groupId = null) {
   const waktuFotoStr = formatWaktu(new Date(data.waktuFoto));
-  const durasiStr    = formatDurasi(data.durasiMenit);
 
   let bagianTag = '';
   if (data.taggedUsers && data.taggedUsers.length > 0)
     bagianTag = `\n👥 *Bersama:* ${data.taggedUsers.map(n => `@${n}`).join(', ')}`;
 
-  // Info tanggal lembur jika berbeda dari tanggal foto
   let bagianTanggal = '';
   if (data.tanggalLembur) {
-    const tglLembur = new Date(data.tanggalLembur + 'T00:00:00').toLocaleDateString('id-ID', {
+    const tgl = new Date(data.tanggalLembur + 'T00:00:00').toLocaleDateString('id-ID', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
-    bagianTanggal = `\n📆 *Tanggal Lembur:* ${tglLembur}`;
+    bagianTanggal = `\n📆 *Tanggal Lembur:* ${tgl}`;
   }
 
   const caption =
@@ -149,21 +227,14 @@ async function kirimStandby(data, groupId = null) {
   return await kirimPesan(pesan, groupId);
 }
 
-module.exports = { client, kirimShareLokasi, kirimLembur, kirimStandby, getWaGroupIdByJobId, kirimPesan, kirimFotoUrl };
-
-// Helper function: Get WA Group ID by Job ID
-async function getWaGroupIdByJobId(jobId) {
-  try {
-    const { data, error } = await supabase
-      .from('wa_group_mappings')
-      .select('wa_group_id')
-      .eq('job_id', jobId)
-      .single();
-    
-    if (error || !data) return null;
-    return data.wa_group_id;
-  } catch (err) {
-    console.error('Error getting WA group ID:', err.message);
-    return null;
-  }
-}
+module.exports = {
+  client,
+  kirimShareLokasi,
+  kirimLembur,
+  kirimStandby,
+  kirimPesan,
+  kirimFotoUrl,
+  getWaGroupIdByJobId,
+  getWaGroupIdByJobNama,
+  getWaGroupIdByUserId,
+};

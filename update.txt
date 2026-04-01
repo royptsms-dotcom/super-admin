@@ -1,18 +1,34 @@
-1. tampilan dasboard masih terlalu retro, coba dibuat agar lebih modern mulai dari font, shape, shadow, textbox, icon, dan warna
-2. tambahkan menu baru namanya "Grup wa" 
-	isinya menampilkan list dari tiap job akan menampilkan text box untuk menginput kode grup
-	jadi tiap job akan memiliki grup wa masing masing untuk input laporan
-	templatenya nama job, nama grup yang sudah terapply(jika sudah di apply) textbox untuk memasukan kode grup baru
-	dibagian pojok atas akan ada tombol yang menampilkan jendela pop up tutorial cara cari kode grup wa beserta syarat dan ketentuan
-3. untuk menu profil admin tolong di rapihkan
-	semua yang berkaitan dengan multiple choise editing buat dalam bentuk drop down saja
-4. menu rumah sakit tambahkan juga text box untuk mengganti link dari databse rumah sakit beserta tombol penampil pop up tutorial beserta syarat dan ketentuan
-5. saya coba tambahkan lokasi lain di sheet database rumasakit namun stelah saya reload di web admin blom langsung kerekap, tolong buat agar update bisa direkap secara otomastis( kalo bisa tetap harus nyambung dengan poin no 4)
+ada databse dari rs yang dobel dan ket non aktif padahal db saya tidak dobel dan tidak saya hapus
+yang saya coba hapus hanya 1 dan tambah 1 tapi ada bug beberapa jadi clone dan jadi nonaktif
+
+ketika saya mau unduh file xlsx muncul page isnt working
+
 6. tampilan menu rekap tunjangan buat agar list rekapan jangan terlalu besar, karrna jikma laporan dari 50 karyawan akan membuat terlalu banyak sampe bawah, dan untuk fitur preview tolong buat agar admin bisa pilih beberapa poin untuk dihapus dari rekapan jika misal ada poin yang tidak di acc
+
 7. menu karyawan, saya mau agar admin bisa mengganti email tiap karyawan, saya ingin pencarian bisa menggunakan nama dan id saja tidak perlu email, dan tambahkan filter dari job, juga tolong buatkan tombol di tiap nama karyawan untuk tombol cetak, yang menampilkan pop up review untuk bisa cetak id card name tag karyawan ( template foto, id, nama karyawan, jabatan(ambil dari job), nama perusahaan ( ambil dari info nama akun di menu profil admin dasboard), logo perusahaan ambil dari icon aplikasi, dan buat agar di aplikasi android tiap client bisa preview id card nametag masing masing 
+
 8. di aplikasi android, menu standby tolong list riwayat standby tidak ush ditampilkan, karen ketrangan standby diatas sudah cukup
+
 9. di aplikasi andoid saya kesulitan pencet tombol keluar karen terhalang oleh tombol navigasi saya, tolong di solve dipindah atau di buat navigasi hide sementara atau bagaimana bebas yang penting mudah dipakai
+
 10. tampilan di aplikasi android tolong diperbaiki juga, buat lebih modern tambahkan shadow atau menu interaktif kah atau bagaimana terserah
+
 11. khusus pada menu input lembur, saya mau ada batas watu timeout untuk simpan foto lembur yang difoto, jadi ketika masuk menu lembur akan ada batas waktu 10 menit untuk simpan laporan lewat dai itu akan tiemout jika tidak tersimpan dan mulai dari menu awal namun jika berhasil tersimpan maka batas timeout akan gugur, buat agar admin punya menu di seeting untuk atur durasi waktu timeout.
+
 12. saya mau semua cache di 60 hari terakhir dari aplikasi di android akan otomatis terhapus agar tidak menumpuk sampah cache di hp client
+
 13. apakah bisa aplikasi di andoid di complie jadi aplikasi tunggal saja tidak perlu lewat expo go jadi tiap user akan mudah pakai tinggal instal lalu input id dan pw sedangkan urusan konfigurasi grup sudah otomatis karena didaftarkan oleh admin di menu karyawan
+
+
+
+
+
+$settingsPath = "$env:APPDATA\Code\User\settings.json"
+
+$json = Get-Content $settingsPath -Raw | ConvertFrom-Json
+
+$json | Add-Member -NotePropertyName "cline.provider" -NotePropertyValue "gemini" -Force
+$json | Add-Member -NotePropertyName "cline.apiKey" -NotePropertyValue "AIzaSyDw8a4GEXOsBf337kEH0dWTRt7YKAYgYlQ" -Force
+$json | Add-Member -NotePropertyName "cline.model" -NotePropertyValue "gemini-1.5-flash" -Force
+
+$json | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
