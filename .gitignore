@@ -1,5 +1,10 @@
 node_modules/
-tunjangan-app-win/node_modules/
-.baileys_auth/
-.env
-*.log
+.expo/
+build/
+dist/
+.eas/
+e-sms/E-SMS V1.1.apk
+ngrok.exe
+e-sms/*.apk
+*.apk
+.baileys_auth_final/

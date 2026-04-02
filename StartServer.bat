@@ -1,9 +1,10 @@
 @echo off
+cd /d "%~dp0"
 title E-SMS - Server Launcher
 color 0A
 
 echo ============================================
-echo   E-SMS - SERVER LAUNCHER
+echo   E-SMS - SERVER LAUNCHER (PERMANEN)
 echo ============================================
 echo.
 
@@ -32,47 +33,39 @@ echo     API_URL diupdate ke: http://%WIN_IP%:3000
 echo.
 
 :: ── 4. Set port forwarding + firewall ────────
-echo [4/5] Setting port forwarding dan firewall...
-netsh interface portproxy delete v4tov4 listenport=3000 listenaddress=0.0.0.0 >nul 2>&1
-netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=%WSL_IP%
-netsh interface portproxy delete v4tov4 listenport=8080 listenaddress=0.0.0.0 >nul 2>&1
-netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=%WSL_IP%
-netsh interface portproxy delete v4tov4 listenport=8081 listenaddress=0.0.0.0 >nul 2>&1
-netsh interface portproxy add v4tov4 listenport=8081 listenaddress=0.0.0.0 connectport=8081 connectaddress=%WSL_IP%
+echo [4/5] Setting firewall...
 netsh advfirewall firewall delete rule name="E-SMS Port 3000" >nul 2>&1
 netsh advfirewall firewall add rule name="E-SMS Port 3000" dir=in action=allow protocol=TCP localport=3000 >nul 2>&1
-netsh advfirewall firewall delete rule name="E-SMS Port 8080" >nul 2>&1
-netsh advfirewall firewall add rule name="E-SMS Port 8080" dir=in action=allow protocol=TCP localport=8080 >nul 2>&1
-netsh advfirewall firewall delete rule name="E-SMS Port 8081" >nul 2>&1
-netsh advfirewall firewall add rule name="E-SMS Port 8081" dir=in action=allow protocol=TCP localport=8081 >nul 2>&1
-echo     Port forwarding dan firewall aktif
+echo     Firewall aktif di Port 3000
 echo.
 
-:: ── 5. Tulis script bash ke file temp ────────
-echo [5/5] Menjalankan server...
+:: ── 5. Menjalankan Server & Ngrok ────────
+echo [5/5] Menjalankan server & Ngrok...
 
-wsl -e bash -c "echo '#!/bin/bash' > /tmp/run-backend.sh && echo 'pkill -f \"node server.js\" 2>/dev/null' >> /tmp/run-backend.sh && echo 'fuser -k 3000/tcp 2>/dev/null' >> /tmp/run-backend.sh && echo 'pkill -f chromium 2>/dev/null' >> /tmp/run-backend.sh && echo 'pkill -f chrome 2>/dev/null' >> /tmp/run-backend.sh && echo 'sleep 2' >> /tmp/run-backend.sh && echo 'cd /mnt/d/Android && HOST=0.0.0.0 node server.js' >> /tmp/run-backend.sh && chmod +x /tmp/run-backend.sh"
+:: Jalankan Ngrok di terminal terpisah
+start "E-SMS Ngrok" "%~dp0ngrok.exe" http --domain=jakobe-synovial-gonzalo.ngrok-free.dev 3000
 
-wsl -e bash -c "echo '#!/bin/bash' > /tmp/run-expo.sh && echo 'pkill -f \"expo start\" 2>/dev/null' >> /tmp/run-expo.sh && echo 'fuser -k 8080/tcp 2>/dev/null' >> /tmp/run-expo.sh && echo 'sleep 2' >> /tmp/run-expo.sh && echo 'cd /mnt/d/Android/e-sms && EXPO_NO_INSPECTOR=1 REACT_NATIVE_PACKAGER_HOSTNAME=%WIN_IP% npx expo start --port 8080' >> /tmp/run-expo.sh && chmod +x /tmp/run-expo.sh"
-
+:: Jalankan Backend di terminal terpisah
+wsl -e bash -c "echo '#!/bin/bash' > /tmp/run-backend.sh && echo 'pkill -f \"node server.js\" 2>/dev/null' >> /tmp/run-backend.sh && echo 'fuser -k 3000/tcp 2>/dev/null' >> /tmp/run-backend.sh && echo 'sleep 2' >> /tmp/run-backend.sh && echo 'cd /mnt/d/Android && HOST=0.0.0.0 node server.js' >> /tmp/run-backend.sh && chmod +x /tmp/run-backend.sh"
 start "E-SMS Backend" wsl bash -c "bash /tmp/run-backend.sh; echo ''; echo 'Server berhenti. Tekan Enter untuk tutup.'; read"
+
 timeout /t 3 /nobreak >nul
+
+:: Jalankan Expo di terminal terpisah (Hanya untuk Testing/Development)
+wsl -e bash -c "echo '#!/bin/bash' > /tmp/run-expo.sh && echo 'pkill -f \"expo start\" 2>/dev/null' >> /tmp/run-expo.sh && echo 'fuser -k 8080/tcp 2>/dev/null' >> /tmp/run-expo.sh && echo 'sleep 2' >> /tmp/run-expo.sh && echo 'cd /mnt/d/Android/e-sms && EXPO_NO_INSPECTOR=1 REACT_NATIVE_PACKAGER_HOSTNAME=%WIN_IP% npx expo start --port 8080' >> /tmp/run-expo.sh && chmod +x /tmp/run-expo.sh"
 start "E-SMS Expo" wsl bash -c "bash /tmp/run-expo.sh; echo ''; echo 'Expo berhenti. Tekan Enter untuk tutup.'; read"
 
 :: ── Info ──────────────────────────────────────
 timeout /t 5 /nobreak >nul
 echo ============================================
-echo   SERVER SIAP!
+echo   SERVER PERMANEN SIAP!
 echo ============================================
 echo.
-echo   Admin Dashboard : http://%WIN_IP%:3000/admin
-echo   API Server      : http://%WIN_IP%:3000
-echo   Expo Metro      : exp://%WIN_IP%:8080
+echo   Website Admin   : https://smsereport.pages.dev
+echo   Backend Tunnel  : https://jakobe-synovial-gonzalo.ngrok-free.dev
+echo   Status Ngrok    : Terminal Ngrok sedang berjalan
 echo.
-echo   Membuka Aktivasi Bot di Browser...
-start http://localhost:3000/admin/wa-bot.html
-echo.
-echo   Pastikan HP terhubung WiFi yang sama!
+echo   Pastikan APK sudah diupdate menggunakan domain Ngrok!
 echo ============================================
 echo.
 pause
