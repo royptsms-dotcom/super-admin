@@ -118,7 +118,19 @@
   <script>
     feather.replace();
 
-    const API = 'https://complement-schools-sum-retirement.trycloudflare.com';
+    const API = 'https://jakobe-synovial-gonzalo.ngrok-free.dev';
+    async function apiFetch(path, opts = {}) {
+      const response = await fetch(`${API}${path}`, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          ...(opts.headers || {})
+        }
+      });
+      return response.json();
+    }
+
     let admin_token = localStorage.getItem('admin_token');
     let admin_user = JSON.parse(localStorage.getItem('admin_user') || 'null');
     
