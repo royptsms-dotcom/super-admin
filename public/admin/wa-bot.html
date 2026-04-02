@@ -155,10 +155,9 @@
         btnRef.innerHTML = '<span class="spinner"></span> Memuat...';
         btnRef.disabled = true;
 
-        const res = await fetch(API + '/api/admin/whatsapp/status', {
+        const data = await apiFetch('/api/admin/whatsapp/status', {
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
-        const data = await res.json();
 
         if (data.isConnected) {
           connStatus.className = 'status-badge status-online';
@@ -202,10 +201,9 @@
 
     async function fetchGroups() {
       try {
-        const res = await fetch(API + '/api/admin/whatsapp/groups', {
+        const groups = await apiFetch('/api/admin/whatsapp/groups', {
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
-        const groups = await res.json();
         
         if (groups.length === 0) {
           groupList.innerHTML = '<tr><td colspan="3" style="text-align:center; color: var(--muted);">Tidak ada grup ditemukan.</td></tr>';
@@ -232,11 +230,10 @@
       try {
         errorMsg.style.display = 'none';
         btnLogout.disabled = true;
-        const res = await fetch(API + '/api/admin/whatsapp/logout', {
+        const result = await apiFetch('/api/admin/whatsapp/logout', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${admin_token}` }
         });
-        const result = await res.json();
         // Backend sudah diprogram untuk paksa reset meskipun terjadi socket error
         alert('Proses reset bot dijalankan. Tunggu sebentar lalu refresh halaman.');
         checkStatus();
