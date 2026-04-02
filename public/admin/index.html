@@ -2138,8 +2138,8 @@
 
   <script>
     const API = 'https://jakobe-synovial-gonzalo.ngrok-free.dev';
-    let TOKEN = localStorage.getItem('admin_token') || '';
-    let USER = JSON.parse(localStorage.getItem('admin_user') || 'null');
+    let TOKEN = sessionStorage.getItem('admin_token') || '';
+    let USER = JSON.parse(sessionStorage.getItem('admin_user') || 'null');
     let allUsers = [], allRS = [], allJobs = [], editUserId = null;
 
     async function doLogin() {
@@ -2155,13 +2155,13 @@
         if (!r.ok) { err.textContent = d.error; return; }
         if (d.user.role !== 'admin') { err.textContent = 'Akun ini bukan admin'; return; }
         TOKEN = d.token; USER = d.user;
-        localStorage.setItem('admin_token', TOKEN); localStorage.setItem('admin_user', JSON.stringify(USER));
+        sessionStorage.setItem('admin_token', TOKEN); sessionStorage.setItem('admin_user', JSON.stringify(USER));
         initDashboard();
       } catch (e) { err.textContent = 'Gagal terhubung ke server'; }
       finally { btn.innerHTML = 'Masuk'; btn.disabled = false; }
     }
 
-    function logout() { localStorage.removeItem('admin_token'); localStorage.removeItem('admin_user'); location.reload(); }
+    function logout() { sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_user'); location.reload(); }
 
     async function apiFetch(path, opts = {}) {
       const r = await fetch(`${API}${path}`, { cache: 'no-store', ...opts, headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
@@ -2840,7 +2840,7 @@
     async function simpanProfil() {
       const r = await apiFetch('/api/admin/profil', { method: 'PATCH', body: JSON.stringify({ nama: document.getElementById('p-nama').value, no_wa: document.getElementById('p-nowa').value, foto_url: document.getElementById('profil-avatar').querySelector('img')?.src || '' }) });
       if (r.error) { toast(r.error, 'error'); return; } toast('Profil berhasil disimpan');
-      USER.nama = document.getElementById('p-nama').value; localStorage.setItem('admin_user', JSON.stringify(USER));
+      USER.nama = document.getElementById('p-nama').value; sessionStorage.setItem('admin_user', JSON.stringify(USER));
       document.getElementById('sidebar-nama').textContent = USER.nama; document.getElementById('profil-nama-display').textContent = USER.nama;
       const ini = USER.nama.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
       if (!document.getElementById('profil-avatar').querySelector('img')) document.getElementById('sidebar-avatar').textContent = ini;
