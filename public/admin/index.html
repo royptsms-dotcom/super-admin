@@ -2164,7 +2164,16 @@
     function logout() { sessionStorage.removeItem('admin_token'); sessionStorage.removeItem('admin_user'); location.reload(); }
 
     async function apiFetch(path, opts = {}) {
-      const r = await fetch(`${API}${path}`, { cache: 'no-store', ...opts, headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+      const r = await fetch(`${API}${path}`, { 
+        cache: 'no-store', 
+        ...opts, 
+        headers: { 
+          'Authorization': `Bearer ${TOKEN}`, 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+          ...(opts.headers || {}) 
+        } 
+      });
       return r.json();
     }
 
