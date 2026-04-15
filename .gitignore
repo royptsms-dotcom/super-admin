@@ -1,10 +1,32 @@
+# Root Node/Expo
 node_modules/
 .expo/
 build/
 dist/
 .eas/
-e-sms/E-SMS V1.1.apk
-ngrok.exe
-e-sms/*.apk
+e-sms/expo_server.log
 *.apk
+
+# Laravel specifics
+tunjangan-laravel/vendor/
+tunjangan-laravel/.env
+tunjangan-laravel/.env.backup
+tunjangan-laravel/.env.production
+tunjangan-laravel/storage/*.key
+tunjangan-laravel/public/storage
+tunjangan-laravel/public/build
+tunjangan-laravel/public/hot
+tunjangan-laravel/.phpunit.cache
+tunjangan-laravel/.phpunit.result.cache
+
+# WA Bot / Sessions
+wa-bot/sessions/
+wa-bot/wa-bot.log
 .baileys_auth_final/
+
+# Others
+ngrok.exe
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

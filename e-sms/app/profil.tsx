@@ -6,6 +6,9 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import api from '../services/api';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserProfile {
   id: string;
@@ -41,14 +44,32 @@ export default function ProfilScreen() {
   const [showNameTag, setShowNameTag] = useState(false);
   const [appConfig, setAppConfig] = useState<AppConfig | null>(null);
 
+  // SISTEM 2: SCAN QR GRUP
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isScanning, setIsScanning]     = useState(false);
+  const [scannedGroupId, setScannedGroupId] = useState<string | null>(null);
+
   useEffect(() => { 
     ambilProfil(); 
     ambilConfig();
+    ambilGrupTersimpan();
   }, []);
+
+  async function ambilGrupTersimpan() {
+    const saved = await AsyncStorage.getItem('forward_wa_group_id');
+    if (saved) setScannedGroupId(saved);
+  }
+
+  async function handleBarCodeScanned({ data }: any) {
+    setIsScanning(false);
+    setScannedGroupId(data);
+    await AsyncStorage.setItem('forward_wa_group_id', data);
+    Alert.alert('Berhasil! ✅', `Tujuan forward disetel ke: ${data}`);
+  }
 
   async function ambilConfig() {
     try {
-      const res = await api.get('/api/master/config');
+      const res = await api.get('/master/config');
       setAppConfig(res.data);
     } catch {}
   }
@@ -56,7 +77,7 @@ export default function ProfilScreen() {
   async function ambilProfil() {
     try {
       setLoading(true);
-      const res = await api.get('/api/auth/profil');
+      const res = await api.get('/auth/profil');
       setProfil(res.data);
     } catch (err) {
       Alert.alert('Error', 'Gagal ambil profil');
@@ -157,7 +178,7 @@ export default function ProfilScreen() {
             <View style={styles.avatarEditBadge}>
               {uploadingFoto
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={{ color: '#fff', fontSize: 12 }}>📷</Text>
+                : <Feather name="camera" size={16} color="#fff" />
               }
             </View>
           </TouchableOpacity>
@@ -172,6 +193,30 @@ export default function ProfilScreen() {
           <TouchableOpacity style={styles.previewBtn} onPress={() => setShowNameTag(true)}>
             <Text style={styles.previewBtnText}>👁 Lihat Name Tag</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* TARGET FORWARD GRUP WA (SISTEM 2) */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>🛰️ WhatsApp Forwarding</Text>
+          <Text style={{ fontSize: 11, color: '#8b96a5', marginBottom: 12 }}>Tentukan grup tujuan forward laporan Anda</Text>
+          
+          {scannedGroupId ? (
+            <View style={{ backgroundColor: '#f0fdf4', borderLeftWidth: 4, borderLeftColor: '#2ECC40', padding: 15, borderRadius: 12 }}>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: '#166534', fontWeight: '900', fontSize: 12 }}>TARGET AKTIF ✅</Text>
+                  <TouchableOpacity onPress={() => setIsScanning(true)}>
+                    <Text style={{ color: '#4680ff', fontWeight: 'bold', fontSize: 11 }}>Ganti Grup</Text>
+                  </TouchableOpacity>
+               </View>
+               <Text style={{ color: '#1a1a2e', fontSize: 13, marginTop: 4, fontWeight: '700' }} numberOfLines={1}>{scannedGroupId}</Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.scanBtn} onPress={() => setIsScanning(true)}>
+              <MaterialIcons name="qr-code-scanner" size={24} color="#fff" />
+              <Text style={{ color: '#fff', fontWeight: '900', marginLeft: 10 }}>Scan QR Dashboard Grup</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={{ fontSize: 10, color: '#adb5bd', marginTop: 10, fontStyle: 'italic' }}>* Scan di menu Dashboard "Mapping Grup WA"</Text>
         </View>
 
         {/* Info Box */}
@@ -197,6 +242,23 @@ export default function ProfilScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal visible={isScanning} animationType="slide" transparent={false}>
+          <View style={styles.scannerOverlay}>
+            <CameraView
+              style={styles.fullCamera}
+              onBarcodeScanned={handleBarCodeScanned}
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            >
+              <View style={styles.scanFrameContainer}>
+                 <View style={styles.scanFrame}></View>
+                 <Text style={styles.scanText}>Arahkan ke QR Mapping di Dashboard</Text>
+                 <TouchableOpacity style={styles.closeScan} onPress={() => setIsScanning(false)}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>BATAL</Text>
+                 </TouchableOpacity>
+              </View>
+            </CameraView>
+          </View>
+        </Modal>
 
       {/* MODAL NAME TAG */}
       <Modal visible={showNameTag} transparent animationType="fade" onRequestClose={() => setShowNameTag(false)}>
@@ -204,7 +266,9 @@ export default function ProfilScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Preview Name Tag</Text>
-              <TouchableOpacity onPress={() => setShowNameTag(false)}><Text style={{fontSize:24, color:'#888'}}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowNameTag(false)}>
+                <Feather name="x" size={24} color="#8b96a5" />
+              </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ alignItems: 'center', paddingVertical: 30 }}>
               <View style={styles.tagCard}>
@@ -243,7 +307,7 @@ function InfoItem({ label, value, last }: { label: string, value: string | undef
       <Text style={styles.infoLabel}>{label}</Text>
       <View style={styles.infoValueBox}>
         <Text style={styles.infoValue}>{value || '-'}</Text>
-        <Text style={{fontSize:12}}>🔒</Text>
+        <Feather name="lock" size={12} color="#8b96a5" />
       </View>
     </View>
   );
@@ -255,8 +319,8 @@ function PasswordInput({ label, value, onChange, show, setShow }: { label: strin
       <Text style={styles.inputLabel}>{label}</Text>
       <View style={styles.passRow}>
         <TextInput style={[styles.input, { flex: 1 }]} value={value} onChangeText={onChange} secureTextEntry={!show} placeholderTextColor="#aaa" />
-        <TouchableOpacity onPress={() => setShow(!show)} style={{ padding: 10 }}>
-          <Text>{show ? '🙈' : '👁'}</Text>
+        <TouchableOpacity onPress={() => setShow(!show)} style={{ padding: 10, position: 'absolute', right: 5 }}>
+          <Feather name={show ? "eye-off" : "eye"} size={20} color="#8b96a5" />
         </TouchableOpacity>
       </View>
     </View>
@@ -264,50 +328,71 @@ function PasswordInput({ label, value, onChange, show, setShow }: { label: strin
 }
 
 const styles = StyleSheet.create({
-  container:         { flex: 1, backgroundColor: '#f8fafc' },
-  header:            { padding: 20, paddingTop: 60, backgroundColor: '#4361ee', borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-  back:              { color: 'rgba(255,255,255,0.7)', fontSize: 13, marginBottom: 4 },
-  title:             { color: '#fff', fontSize: 22, fontWeight: '800' },
-  avatarSection:     { alignItems: 'center', paddingVertical: 20 },
-  avatar:            { width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#fff' },
-  avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#4361ee', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#fff' },
-  avatarInisial:     { color: '#fff', fontSize: 36, fontWeight: 'bold' },
-  avatarEditBadge:   { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#4361ee', borderRadius: 15, width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' },
-  avatarNama:        { fontSize: 20, fontWeight: '800', color: '#1e293b', marginTop: 12 },
-  avatarRole:        { fontSize: 11, color: '#64748b', marginTop: 2, letterSpacing: 1.5, fontWeight: '700' },
-  card:              { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  cardTitle:         { fontSize: 14, fontWeight: '800', color: '#1e293b', marginBottom: 16 },
-  infoRow:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f1f5f9' },
-  infoLabel:         { fontSize: 13, color: '#64748b' },
-  infoValueBox:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoValue:         { fontSize: 14, fontWeight: '600', color: '#1e293b' },
-  lockNote:          { fontSize: 11, color: '#94a3b8', marginTop: 12, fontStyle: 'italic' },
-  inputLabel:        { fontSize: 13, color: '#475569', marginBottom: 6, fontWeight: '600' },
-  passRow:           { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input:             { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 12, fontSize: 14, color: '#1e293b', backgroundColor: '#f8fafc' },
-  saveBtn:           { backgroundColor: '#4361ee', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 16 },
-  saveBtnDisabled:   { backgroundColor: '#cbd5e1' },
-  saveBtnText:       { color: '#fff', fontSize: 14, fontWeight: '700' },
-  previewBtn:        { backgroundColor: '#4361ee', borderRadius: 10, padding: 12, alignItems: 'center' },
-  previewBtnText:    { color: '#fff', fontWeight: 'bold' },
-  modalOverlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent:      { backgroundColor: '#fff', borderRadius: 24, width: '100%', maxWidth: 340, overflow: 'hidden' },
-  modalHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: '#f1f5f9' },
-  modalTitle:        { fontSize: 16, fontWeight: '800', color: '#1e293b' },
-  tagCard:           { width: 260, height: 400, backgroundColor: '#fff', borderRadius: 24, padding: 20, alignItems: 'center', elevation: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, borderWidth: 1, borderColor: '#e2e8f0' },
-  tagHeader:         { alignItems: 'center', marginBottom: 20 },
-  tagLogoBox:        { width: 50, height: 50, backgroundColor: '#f8fafc', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 8, borderWidth: 1, borderColor: '#f1f5f9' },
-  tagCompanyName:    { fontSize: 10, fontWeight: '900', color: '#4361ee', letterSpacing: 1.2 },
-  tagPhotoBox:       { position: 'relative', marginBottom: 20 },
-  tagPhoto:          { width: 130, height: 130, borderRadius: 20, borderWidth: 3, borderColor: '#4361ee' },
-  tagAccentMark:     { position: 'absolute', bottom: -5, right: -5, backgroundColor: '#4361ee', width: 28, height: 28, borderRadius: 10, borderWidth: 3, borderColor: '#fff' },
-  tagInfo:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  tagName:           { fontSize: 18, fontWeight: '800', color: '#1e293b', textAlign: 'center', marginBottom: 6 },
-  tagJobBadge:       { backgroundColor: '#eef2ff', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8 },
-  tagJobText:        { fontSize: 10, fontWeight: '800', color: '#4361ee' },
-  tagFooter:         { width: '100%', paddingTop: 15, borderTopWidth: 1, borderStyle: 'dashed', borderColor: '#e2e8f0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  tagIDLabel:        { fontSize: 8, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' },
-  tagIDValue:        { fontSize: 14, fontWeight: '800', color: '#4361ee' },
-  tagGraphic:        { width: 40, height: 4, backgroundColor: '#e2e8f0', borderRadius: 2 },
-  tagHint:           { fontSize: 11, color: '#94a3b8', marginTop: 24, fontStyle: 'italic' }
+  container: { flex: 1, backgroundColor: '#f6f9fc' },
+  header: { 
+    padding: 24, 
+    paddingTop: 64, 
+    paddingBottom: 40,
+    backgroundColor: '#4680ff', 
+    borderBottomLeftRadius: 40, 
+    borderBottomRightRadius: 40,
+    elevation: 10,
+    shadowColor: '#4680ff',
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+  },
+  back: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', marginBottom: 4 },
+  title: { color: '#fff', fontSize: 24, fontWeight: '900', letterSpacing: 0.5 },
+  avatarSection: { alignItems: 'center', marginTop: -30, marginBottom: 20 },
+  avatar: { width: 110, height: 110, borderRadius: 55, borderWidth: 5, borderColor: '#fff' },
+  avatarPlaceholder: { width: 110, height: 110, borderRadius: 55, backgroundColor: '#4680ff', alignItems: 'center', justifyContent: 'center', borderWidth: 5, borderColor: '#fff' },
+  avatarInisial: { color: '#fff', fontSize: 40, fontWeight: '900' },
+  avatarEditBadge: { position: 'absolute', bottom: 5, right: 5, backgroundColor: '#4680ff', borderRadius: 15, width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#fff' },
+  avatarNama: { fontSize: 22, fontWeight: '900', color: '#1a1a2e', marginTop: 12 },
+  avatarRole: { fontSize: 11, color: '#8b96a5', marginTop: 2, letterSpacing: 2, fontWeight: '800', textTransform: 'uppercase' },
+  card: { 
+    backgroundColor: '#fff', 
+    borderRadius: 24, 
+    padding: 20, 
+    marginBottom: 16, 
+    elevation: 8,
+    shadowColor: '#30475e',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  cardTitle: { fontSize: 15, fontWeight: '900', color: '#1a1a2e', marginBottom: 18, textTransform: 'uppercase', letterSpacing: 0.5 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderColor: '#f0f2f5' },
+  infoLabel: { fontSize: 13, color: '#8b96a5', fontWeight: '600' },
+  infoValueBox: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  infoValue: { fontSize: 14, fontWeight: '700', color: '#1a1a2e' },
+  lockNote: { fontSize: 11, color: '#adb5bd', marginTop: 15, fontStyle: 'italic', textAlign: 'center' },
+  inputLabel: { fontSize: 12, color: '#8b96a5', marginBottom: 8, fontWeight: '800', textTransform: 'uppercase' },
+  passRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  input: { flex: 1, borderWidth: 2, borderColor: '#f0f2f5', borderRadius: 15, padding: 14, fontSize: 15, color: '#1a1a2e', backgroundColor: '#fafbfc' },
+  saveBtn: { backgroundColor: '#4680ff', borderRadius: 18, padding: 18, alignItems: 'center', marginTop: 16, elevation: 5, shadowColor: '#4680ff', shadowOpacity: 0.3 },
+  saveBtnDisabled: { backgroundColor: '#cbd5e1' },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
+  previewBtn: { backgroundColor: '#4680ff', borderRadius: 15, padding: 15, alignItems: 'center', elevation: 4 },
+  previewBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(26, 26, 46, 0.9)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#fff', borderRadius: 32, width: '100%', maxWidth: 350, overflow: 'hidden', elevation: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderColor: '#f0f2f5' },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: '#1a1a2e' },
+  tagCard: { width: 270, height: 410, backgroundColor: '#fff', borderRadius: 28, padding: 24, alignItems: 'center', elevation: 15, shadowColor: '#000', shadowOpacity: 0.1, borderWidth: 1, borderColor: '#f0f2f5' },
+  tagHeader: { alignItems: 'center', marginBottom: 20 },
+  tagLogoBox: { width: 54, height: 54, backgroundColor: '#f8f9fa', borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#f0f2f5' },
+  tagCompanyName: { fontSize: 11, fontWeight: '900', color: '#4680ff', letterSpacing: 1.5 },
+  tagPhotoBox: { position: 'relative', marginBottom: 22 },
+  tagPhoto: { width: 140, height: 140, borderRadius: 24, borderWidth: 4, borderColor: '#4680ff' },
+  tagAccentMark: { position: 'absolute', bottom: -6, right: -6, backgroundColor: '#4680ff', width: 30, height: 30, borderRadius: 10, borderWidth: 4, borderColor: '#fff' },
+  tagInfo: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  tagName: { fontSize: 20, fontWeight: '900', color: '#1a1a2e', textAlign: 'center', marginBottom: 8 },
+  tagJobBadge: { backgroundColor: '#eef2ff', paddingVertical: 5, paddingHorizontal: 15, borderRadius: 10 },
+  tagJobText: { fontSize: 11, fontWeight: '900', color: '#4680ff', textTransform: 'uppercase' },
+  tagFooter: { width: '100%', paddingTop: 18, borderTopWidth: 1, borderStyle: 'dashed', borderColor: '#e1e5eb', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  tagIDLabel: { fontSize: 8, color: '#8b96a5', textTransform: 'uppercase', fontWeight: '800' },
+  tagIDValue: { fontSize: 15, fontWeight: '900', color: '#4680ff' },
+  tagGraphic: { width: 45, height: 5, backgroundColor: '#f0f2f5', borderRadius: 3 },
+  tagHint: { fontSize: 11, color: '#adb5bd', marginTop: 24, fontStyle: 'italic' }
 });

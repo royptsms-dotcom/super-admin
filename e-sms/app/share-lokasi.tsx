@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 export default function ShareLokasiScreen() {
@@ -39,8 +40,8 @@ export default function ShareLokasiScreen() {
   async function ambilMasterData() {
     try {
       const [rsRes, usersRes] = await Promise.all([
-        api.get('/api/master/rs'),
-        api.get('/api/master/users'),
+        api.get('/master/rs'),
+        api.get('/master/users'),
       ]);
       setDaftarRS(rsRes.data);
       setDaftarUsers(usersRes.data);
@@ -70,17 +71,22 @@ export default function ShareLokasiScreen() {
     }
     try {
       setLoading(true);
-      await api.post('/api/share-lokasi', {
+      
+      // Ambil ID Grup dari Global Settings (Sistem 2)
+      const targetGroupId = await AsyncStorage.getItem('forward_wa_group_id');
+
+      await api.post('/share-lokasi', {
         rs_id:           selectedRS.id,
         latitude:        location.latitude,
         longitude:       location.longitude,
         keterangan,
         tagged_user_ids: taggedUsers.map(u => u.id),
+        wa_group_id:     targetGroupId, // Kirim ID Grup hasil scan
       });
       Alert.alert('Berhasil! 🎉', 'Lokasi sudah dikirim ke grup WA', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Gagal', err.response?.data?.error || 'Terjadi kesalahan');
     } finally {
       setLoading(false);

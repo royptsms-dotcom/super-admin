@@ -22,7 +22,7 @@ export default function StandbyScreen() {
 
   async function cekStatusHariIni() {
     try {
-      const res = await api.get('/api/standby/status-hari-ini');
+      const res = await api.get('/standby/status-hari-ini');
       if (res.data) {
         setSudahHariIni(true);
         setDataHariIni(res.data);
@@ -44,7 +44,7 @@ export default function StandbyScreen() {
           onPress: async () => {
             try {
               setLoading(true);
-              await api.post('/api/standby', { tanggal: today });
+              await api.post('/standby', { tanggal: today });
               Alert.alert('Berhasil! 🎉', 'Status standby sudah dikirim ke grup WA', [
                 { text: 'OK', onPress: () => cekStatusHariIni() }
               ]);

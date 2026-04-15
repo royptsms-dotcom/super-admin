@@ -1,0 +1,69 @@
+<?php
+
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\SettingController;
+use Illuminate\Support\Facades\Route;
+
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminTunjanganController;
+use App\Http\Controllers\AuthController;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+// Authentication Routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'postLogin'])->name('postLogin');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Protected Admin Routes
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::controller(SettingController::class)->group(function () {
+        Route::get('/settings', 'index')->name('settings.index');
+        Route::post('/settings', 'update')->name('settings.update');
+        Route::get('/settings/sync', 'sync')->name('settings.sync');
+    });
+
+    Route::controller(CertificateController::class)->group(function () {
+        Route::get('/certificates', 'index')->name('certificates.index');
+        Route::get('/certificates/create', 'create')->name('certificates.create');
+        Route::post('/certificates', 'store')->name('certificates.store');
+        Route::get('/certificates/download/{certificate}', 'download')->name('certificates.download');
+        Route::delete('/certificates/{certificate}', 'destroy')->name('certificates.destroy');
+    });
+
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::controller(AdminTunjanganController::class)->prefix('admin')->group(function () {
+        Route::get('/karyawan', 'karyawan')->name('admin.karyawan');
+        Route::get('/karyawan/print/{id}', 'printKaryawan')->name('admin.karyawan.print');
+        Route::post('/karyawan', 'storeKaryawan')->name('admin.karyawan.store');
+        Route::put('/karyawan/{id}', 'updateKaryawan')->name('admin.karyawan.update');
+        Route::delete('/karyawan/{id}', 'destroyKaryawan')->name('admin.karyawan.destroy');
+        
+        Route::get('/rekap', 'rekap')->name('admin.rekap');
+        
+        // WA Mapping
+        Route::get('/wa-bot/start', 'startBot')->name('admin.wa-bot.start');
+        Route::get('/wagroup', 'wagroup')->name('admin.wagroup');
+        Route::post('/wagroup', 'storeWagroup')->name('admin.wagroup.store');
+        Route::delete('/wagroup/{id}', 'destroyWagroup')->name('admin.wagroup.destroy');
+
+        Route::get('/master-lokasi', 'masterLokasi')->name('admin.master-lokasi');
+        Route::post('/master-lokasi', 'masterLokasiStore')->name('admin.master-lokasi.store');
+        Route::get('/master-lokasi/sync', 'syncLokasi')->name('admin.master-lokasi.sync');
+
+        Route::get('/master-sertifikat', 'masterSertifikat')->name('admin.master-sertifikat');
+    });
+});
+
+// Fitur Share Lokasi (Bisa diakses user jika diizinkan, atau tetap di sini)
+Route::middleware(['auth'])->group(function() {
+    Route::controller(\App\Http\Controllers\ShareLokasiController::class)->group(function () {
+        Route::get('/share-lokasi', 'create')->name('share-lokasi.create');
+        Route::post('/share-lokasi', 'store')->name('share-lokasi.store');
+    });
+});
+
+// APIs (Can be open or use separate middleware)

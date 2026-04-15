@@ -1,0 +1,106 @@
+#!/usr/bin/env php
+<?php
+
+define('LARAVEL_START', microtime(true));
+
+/*
+|--------------------------------------------------------------------------
+| Register The Auto Loader
+|--------------------------------------------------------------------------
+|
+| Composer provides a convenient, automatically generated class loader
+| for our application. We just need to utilize it! We'll require it
+| into the script here so that we do not have to worry about the
+| loading of any of our classes manually. It's great to relax.
+|
+*/
+
+require __DIR__.'/vendor/autoload.php';
+
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+/*
+|--------------------------------------------------------------------------
+| Auto Start WhatsApp Bot
+|--------------------------------------------------------------------------
+| Khusus saat menjalankan 'php artisan serve', bot WA juga akan ikut nyala.
+*/
+if (isset($_SERVER['argv']) && in_array('serve', $_SERVER['argv'])) {
+    $botPath = __DIR__ . '/wa-bot';
+    $expoPath = dirname(__DIR__) . '/e-sms';
+
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        // 1. Start WhatsApp Bot (Quiet mode)
+        pclose(popen("start /B cmd /C \"cd $botPath && node index.js > NUL 2>&1\"", "r"));
+        
+        // 2. AUTO SYNC IP & EXPO START
+        $configPath = $expoPath . '/constants/config.js';
+        if (file_exists($configPath)) {
+            $ipOutput = [];
+            exec('ipconfig', $ipOutput);
+            $localIp = '127.0.0.1';
+            
+            $candidates = [];
+            foreach ($ipOutput as $line) {
+                if (strpos($line, 'IPv4 Address') !== false) {
+                    $parts = explode(':', $line);
+                    $candidates[] = trim($parts[1]);
+                }
+            }
+            
+            foreach ($candidates as $ip) {
+                if (strpos($ip, '10.198.') === 0) { $localIp = $ip; break; }
+                if ($localIp === '127.0.0.1' && strpos($ip, '192.168.') === 0) $localIp = $ip;
+            }
+
+            file_put_contents($configPath, "export default { API_URL: 'http://$localIp:8000' }");
+            
+            // 3. Start Expo also in background (Quiet mode)
+            pclose(popen("start /B cmd /C \"cd $expoPath && npx expo start --lan --port 8089 > NUL 2>&1\"", "r"));
+            
+            echo "\n\033[1;36m✨ MAGIC SYSTEM: WA Bot & Expo Mobile sudah berjalan otomatis di latar belakang! \n\033[0m";
+        }
+    }
+ else {
+        exec("cd $botPath && node index.js > /dev/null 2>&1 &");
+        exec("cd $expoPath && npx expo start --lan > /dev/null 2>&1 &");
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Run The Artisan Application
+|--------------------------------------------------------------------------
+|
+| When we run the console application, the current CLI command will be
+| executed in this console and the response sent back to a terminal
+| or another output device for the developers. Here goes nothing!
+|
+*/
+
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+if (isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'serve') {
+    $_SERVER['argv'][] = '--host';
+    $_SERVER['argv'][] = '0.0.0.0';
+}
+
+$status = $kernel->handle(
+    $input = new Symfony\Component\Console\Input\ArgvInput,
+    new Symfony\Component\Console\Output\ConsoleOutput
+);
+
+/*
+|--------------------------------------------------------------------------
+| Shutdown The Application
+|--------------------------------------------------------------------------
+|
+| Once Artisan has finished running, we will fire off the shutdown events
+| so that any final work may be done by the application before we shut
+| down the process. This is the last thing to happen to the request.
+|
+*/
+
+$kernel->terminate($input, $status);
+
+exit($status);

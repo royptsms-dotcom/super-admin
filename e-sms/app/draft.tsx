@@ -18,7 +18,7 @@ export default function DraftScreen() {
   async function ambilDraft() {
     try {
       setLoading(true);
-      const res = await api.get('/api/lembur/draft');
+      const res = await api.get('/lembur/draft');
       setDraftList(res.data);
     } catch (err) {
       Alert.alert('Error', 'Gagal ambil data draft');
@@ -35,7 +35,7 @@ export default function DraftScreen() {
         onPress: async () => {
           try {
             setDeleting(id);
-            await api.delete(`/api/lembur/draft/${id}`);
+            await api.delete(`/lembur/draft/${id}`);
             setDraftList(prev => prev.filter(d => d.id !== id));
           } catch (err) {
             Alert.alert('Gagal', 'Gagal menghapus draft');

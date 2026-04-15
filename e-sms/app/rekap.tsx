@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../services/api';
-import CONFIG from '../constants/config';
+// import CONFIG from '../constants/config'; (SUDAH TIDAK DIPAKAI)
 
 const TABS = ['Profil', 'Setting', 'Karyawan', 'Rekap'];
 
@@ -454,7 +454,7 @@ function TabRekap({ token }) {
     try {
       setLoading(true);
       setRekap(null);
-      const res = await api.get(`/api/admin/rekap?bulan=${bulan}`);
+      const res = await api.get(`/admin/rekap?bulan=${bulan}`);
       setRekap(res.data);
     } catch (err) {
       Alert.alert('Gagal', err.response?.data?.error || 'Terjadi kesalahan');
@@ -466,7 +466,7 @@ function TabRekap({ token }) {
   async function downloadXlsx() {
     try {
       setLoadingXlsx(true);
-      const url = `${CONFIG.API_URL}/api/admin/rekap/xlsx?bulan=${bulan}&token=${token}`;
+      const url = `${api.defaults.baseURL}/admin/rekap/xlsx?bulan=${bulan}&token=${token}`;
       await Linking.openURL(url);
     } catch {
       Alert.alert('Gagal', 'Tidak bisa membuka link download');

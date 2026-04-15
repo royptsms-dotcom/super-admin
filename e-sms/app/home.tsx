@@ -6,6 +6,9 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback } from 'react';
 import api from '../services/api';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Modal } from 'react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -13,27 +16,56 @@ export default function HomeScreen() {
   const [user, setUser]               = useState<any>(null);
   const [showMenu, setShowMenu] = useState(false);
 
+  // SISTEM 2: SCAN QR GRUP
+  const [permission, requestPermission] = useCameraPermissions();
+  const [isScanning, setIsScanning]     = useState(false);
+
+  async function handleBarCodeScanned({ data }: any) {
+    setIsScanning(false);
+    await AsyncStorage.setItem('forward_wa_group_id', data);
+    Alert.alert('Berhasil! ✅', `Semua laporan akan dikirim ke Grup: ${data}`);
+    checkWAStatus();
+  }
+
+  const [waOnline, setWaOnline]     = useState(false);
+  const [groupId, setGroupId]       = useState<string | null>(null);
+
   useEffect(() => {
     AsyncStorage.getItem('user').then(u => { if (u) setUser(JSON.parse(u)); });
+    checkWAStatus();
+    const interval = setInterval(checkWAStatus, 15000); // Cek tiap 15 detik
+    return () => clearInterval(interval);
   }, []);
+
+  async function checkWAStatus() {
+    try {
+      const gid = await AsyncStorage.getItem('forward_wa_group_id');
+      setGroupId(gid);
+      const res = await api.get('/wa-status');
+      setWaOnline(res.data.online && !!gid);
+    } catch {
+      setWaOnline(false);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
       ambilJumlahDraft();
       ambilProfil();
+      checkWAStatus();
     }, [])
   );
 
   async function ambilJumlahDraft() {
     try {
-      const res = await api.get('/api/lembur/draft');
+      const res = await api.get('/lembur/draft');
       setJumlahDraft(res.data.length);
     } catch {}
   }
 
   async function ambilProfil() {
     try {
-      const res = await api.get('/api/auth/profil');
+      const res = await api.get('/auth/profil');
       setUser(res.data);
       await AsyncStorage.setItem('user', JSON.stringify(res.data));
     } catch {}
@@ -66,6 +98,17 @@ export default function HomeScreen() {
           <Text style={styles.userId}>ID: {user?.employee_id || '-'}</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          {/* LED INDICATOR */}
+          <View style={{ alignItems: 'center', marginRight: 4 }}>
+            <View style={[
+              styles.ledCircle, 
+              { backgroundColor: waOnline ? '#2ECC40' : '#e63946' }
+            ]} />
+            <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold', marginTop: 2 }}>
+              {waOnline ? 'ON' : 'OFF'}
+            </Text>
+          </View>
+
           <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuBtn}>
             <Text style={styles.menuIcon}>⋮</Text>
           </TouchableOpacity>
@@ -86,6 +129,9 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => { router.push('/profil'); setShowMenu(false); }} style={styles.menuItem}>
             <Text style={styles.menuItemText}>👤 Profil</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setIsScanning(true); setShowMenu(false); }} style={styles.menuItem}>
+            <Text style={styles.menuItemText}>📸 Scan QR Grup</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleLogout} style={styles.menuItem}>
             <Text style={[styles.menuItemText, { color: '#e63946' }]}>← Keluar</Text>
           </TouchableOpacity>
@@ -93,71 +139,248 @@ export default function HomeScreen() {
       )}
 
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={[styles.card, { backgroundColor: '#4361ee' }]}
-          onPress={() => router.push('/share-lokasi')}>
-          <Text style={styles.cardIcon}>📍</Text>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/share-lokasi')}>
+          <View style={[styles.iconBox, { backgroundColor: '#eef2ff' }]}>
+            <Feather name="map-pin" size={24} color="#4680ff" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Share Lokasi</Text>
-            <Text style={styles.cardDesc}>Kirim lokasi ke grup WA</Text>
+            <Text style={styles.cardDesc}>Kirim koordinat GPS Anda ke pusat</Text>
           </View>
+          <Feather name="chevron-right" size={20} color="#cbd5e0" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: '#f77f00' }]}
-          onPress={() => router.push('/lembur')}>
-          <Text style={styles.cardIcon}>📸</Text>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/lembur')}>
+          <View style={[styles.iconBox, { backgroundColor: '#fff7ed' }]}>
+            <Feather name="camera" size={24} color="#f77f00" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Lembur</Text>
-            <Text style={styles.cardDesc}>Foto GPS + keterangan lembur</Text>
+            <Text style={styles.cardDesc}>Foto bukti GPS & laporan kerja</Text>
           </View>
+          <Feather name="chevron-right" size={20} color="#cbd5e0" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: '#2dc653' }]}
-          onPress={() => router.push('/standby')}>
-          <Text style={styles.cardIcon}>🟢</Text>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/standby')}>
+          <View style={[styles.iconBox, { backgroundColor: '#f0fdf4' }]}>
+            <Feather name="check-square" size={24} color="#2dc653" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Standby</Text>
-            <Text style={styles.cardDesc}>Daftar standby hari ini</Text>
+            <Text style={styles.cardDesc}>Pantau daftar standby hari ini</Text>
           </View>
+          <Feather name="chevron-right" size={20} color="#cbd5e0" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { backgroundColor: '#7b2d8b' }]}
-          onPress={() => router.push('/draft')}>
-          <Text style={styles.cardIcon}>📋</Text>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/draft')}>
+          <View style={[styles.iconBox, { backgroundColor: '#faf5ff' }]}>
+            <Feather name="file-text" size={24} color="#7b2d8b" />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>Draft</Text>
-            <Text style={styles.cardDesc}>Lembur belum selesai diisi</Text>
+            <Text style={styles.cardDesc}>Selesaikan laporan yang tertunda</Text>
           </View>
           {jumlahDraft > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{jumlahDraft}</Text>
             </View>
           )}
+          <Feather name="chevron-right" size={20} color="#cbd5e0" style={{ marginLeft: 10 }} />
         </TouchableOpacity>
       </View>
+
+      {/* Modal Scanner (Sistem 2) */}
+      <Modal visible={isScanning} animationType="slide" transparent={false}>
+          <View style={styles.scannerOverlay}>
+            <CameraView
+              style={styles.fullCamera}
+              onBarcodeScanned={handleBarCodeScanned}
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+            >
+              <View style={styles.scanFrameContainer}>
+                 <View style={styles.scanFrame}></View>
+                 <Text style={styles.scanText}>Arahkan ke QR Mapping di Dashboard</Text>
+                 <TouchableOpacity style={styles.closeScan} onPress={() => setIsScanning(false)}>
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>BATAL</Text>
+                 </TouchableOpacity>
+              </View>
+            </CameraView>
+          </View>
+        </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:         { flex: 1, backgroundColor: '#f0f4f8' },
-  header:            { backgroundColor: '#4361ee', padding: 20, paddingTop: 54, paddingBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  greeting:          { color: 'rgba(255,255,255,0.8)', fontSize: 13 },
-  userName:          { color: '#fff', fontSize: 20, fontWeight: 'bold', marginTop: 2 },
-  userId:            { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 },
-  menuBtn:           { padding: 8, justifyContent: 'center', alignItems: 'center' },
-  menuIcon:          { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  avatarBtn:         { marginLeft: 12 },
-  avatarImg:         { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: '#fff' },
-  avatarPlaceholder: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
-  avatarInisial:     { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  dropdownMenu:      { backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#e0e0e0', elevation: 3 },
-  menuItem:          { padding: 14, borderBottomWidth: 1, borderColor: '#f0f0f0' },
-  menuItemText:      { fontSize: 14, color: '#1a1a2e', fontWeight: '500' },
-  menuContainer:     { flex: 1, padding: 16, paddingTop: 20 },
-  card:              { borderRadius: 16, padding: 18, marginBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 14, elevation: 3 },
-  cardIcon:          { fontSize: 30 },
-  cardTitle:         { fontSize: 17, fontWeight: 'bold', color: '#fff' },
-  cardDesc:          { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  badge:             { backgroundColor: '#fff', borderRadius: 12, minWidth: 24, height: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  badgeText:         { color: '#4361ee', fontSize: 13, fontWeight: 'bold' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f6f9fc' 
+  },
+  header: { 
+    backgroundColor: '#4680ff', 
+    padding: 24, 
+    paddingTop: 64, 
+    paddingBottom: 40, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    elevation: 10,
+    shadowColor: '#4680ff',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+  },
+  greeting: { 
+    color: 'rgba(255,255,255,0.7)', 
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  userName: { 
+    color: '#fff', 
+    fontSize: 24, 
+    fontWeight: '900', 
+    marginTop: 4,
+    letterSpacing: 0.5
+  },
+  userId: { 
+    color: 'rgba(255,255,255,0.8)', 
+    fontSize: 12, 
+    marginTop: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 20,
+    alignSelf: 'flex-start'
+  },
+  ledCircle: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  menuBtn: { 
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  menuIcon: { color: '#fff', fontSize: 20 },
+  avatarBtn: { marginLeft: 12 },
+  avatarImg: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    borderWidth: 3, 
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  avatarPlaceholder: { 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    backgroundColor: '#fff', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    borderWidth: 3, 
+    borderColor: 'rgba(255,255,255,0.4)' 
+  },
+  avatarInisial: { color: '#4680ff', fontSize: 22, fontWeight: '900' },
+  dropdownMenu: { 
+    position: 'absolute',
+    top: 130,
+    right: 24,
+    backgroundColor: '#fff', 
+    borderRadius: 15,
+    padding: 8,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    zIndex: 999,
+    width: 160
+  },
+  menuItem: { 
+    padding: 12, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    gap: 10
+  },
+  menuItemText: { fontSize: 14, color: '#2c3e50', fontWeight: '700' },
+  menuContainer: { 
+    flex: 1, 
+    padding: 20, 
+    marginTop: -20 
+  },
+  card: { 
+    backgroundColor: '#fff',
+    borderRadius: 24, 
+    padding: 20, 
+    marginBottom: 16, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 18, 
+    elevation: 8,
+    shadowColor: '#30475e',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  iconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardIcon: { fontSize: 24 },
+  cardTitle: { 
+    fontSize: 18, 
+    fontWeight: '900', 
+    color: '#2c3e50' 
+  },
+  cardDesc: { 
+    fontSize: 12, 
+    color: '#7f8c8d', 
+    marginTop: 4,
+    lineHeight: 16
+  },
+  badge: { 
+    backgroundColor: '#ff4757', 
+    borderRadius: 10, 
+    minWidth: 20, 
+    height: 20, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingHorizontal: 5 
+  },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '900' },
+  // STYLES SISTEM 2
+  scannerOverlay: { flex: 1, backgroundColor: '#000' },
+  fullCamera: { flex: 1 },
+  scanFrameContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  scanFrame: { width: 250, height: 250, borderWidth: 4, borderColor: '#4680ff', borderRadius: 20, backgroundColor: 'transparent' },
+  scanText: { color: '#fff', marginTop: 20, fontWeight: 'bold', fontSize: 13 },
+  closeScan: { marginTop: 40, padding: 15, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10 }
 });
+
+// Dan jangan lupa mengupdate bagian render Card di return() agar menggunakan iconBox:
+/*
+Contoh perubahan di return:
+<TouchableOpacity style={styles.card} onPress={() => router.push('/share-lokasi')}>
+    <View style={[styles.iconBox, { backgroundColor: '#eef2ff' }]}>
+        <Text style={styles.cardIcon}>📍</Text>
+    </View>
+    <View style={{ flex: 1 }}>
+        <Text style={styles.cardTitle}>Share Lokasi</Text>
+        <Text style={styles.cardDesc}>Kirim koordinat GPS Anda ke dashboard pusat</Text>
+    </View>
+    <Text style={{color:'#cbd5e0'}}>❯</Text>
+</TouchableOpacity>
+*/

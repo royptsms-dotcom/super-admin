@@ -1,0 +1,18 @@
+{
+    "algerian": {
+        "normal": "D:\\Android\\tunjangan-laravel\\storage\\fonts\/algerian_normal_fa189bd5ff2d8b04b4acd5afc18228ea",
+        "bold": "algerian_bold_fa189bd5ff2d8b04b4acd5afc18228ea"
+    },
+    "lucidacalligraphy": {
+        "normal": "lucidacalligraphy_normal_0c977b6e18ce9123fcc698808efe3a4d"
+    },
+    "perpetuatitling": {
+        "normal": "perpetuatitling_normal_064c1afe5786cd1fd514419120907a52"
+    },
+    "brushscriptmt": {
+        "normal": "brushscriptmt_normal_6344d286276fd0b39a147b8c36bb8261"
+    },
+    "perpetua": {
+        "normal": "perpetua_normal_1d6a02dccb98c472a7b404d294f923dc"
+    }
+}
