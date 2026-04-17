@@ -17,3 +17,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# WA Bot Sessions & Logs
+wa-bot/sessions/
+wa-bot/wa-bot.log
