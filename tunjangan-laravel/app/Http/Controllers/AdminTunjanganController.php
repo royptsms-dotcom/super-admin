@@ -37,34 +37,105 @@ class AdminTunjanganController extends Controller
                   ->orderBy('waktu_share', 'desc')
                   ->get();
 
-        $lemburs = \App\Models\Lembur::with('user')
+        $lemburs = \App\Models\Lembur::with('user', 'rumahSakit')
                     ->where('waktu_mulai', 'like', $bulan . '%')
                     ->where('status', 'submitted')
                     ->orderBy('waktu_mulai', 'desc')
                     ->get();
+
+        $standbies = \App\Models\Standby::with('user')
+                      ->where('tanggal', 'like', $bulan . '%')
+                      ->get();
+
+        // Ambil Setting Harga
+        $hargaLemburPerJam = Setting::where('key', 'harga_lembur_per_jam')->first()?->value ?? 0;
+        $maxNominalLembur = Setting::where('key', 'max_nominal_lembur')->first()?->value ?? 0;
+        $hargaStandbyMinggu = Setting::where('key', 'harga_standby_minggu')->first()?->value ?? 0;
+        $hargaStandbyBiasa = Setting::where('key', 'harga_standby_biasa')->first()?->value ?? 0;
 
         // Grouping Data per User untuk Summary
         $usersGroups = User::whereHas('shareLokasi', function($q) use ($bulan){
             $q->where('waktu_share', 'like', $bulan . '%');
         })->orWhereHas('lembur', function($q) use ($bulan){
             $q->where('waktu_mulai', 'like', $bulan . '%')->where('status', 'submitted');
+        })->orWhereHas('standby', function($q) use ($bulan){
+            $q->where('tanggal', 'like', $bulan . '%');
         })->get();
 
-        $rekapData = $usersGroups->map(function($user) use ($shares, $lemburs) {
+        $rekapData = $usersGroups->map(function($user) use ($shares, $lemburs, $standbies, $hargaLemburPerJam, $maxNominalLembur, $hargaStandbyMinggu, $hargaStandbyBiasa) {
             $userShares = $shares->where('user_id', $user->id);
             $userLemburs = $lemburs->where('user_id', $user->id);
+            $userStandbies = $standbies->where('user_id', $user->id);
             
+            $biayaShare = $userShares->sum('harga');
+            $biayaLembur = 0;
+            $biayaStandby = 0;
+
+            foreach ($userLemburs as $l) {
+                if ($l->waktu_mulai && $l->waktu_selesai) {
+                    $mulai = \Carbon\Carbon::parse($l->waktu_mulai);
+                    $selesai = \Carbon\Carbon::parse($l->waktu_selesai);
+                    
+                    // Tentukan jam mulai overtime window berdasarkan hari
+                    $dayOfWeek = $mulai->dayOfWeek; // 0 (Sun) to 6 (Sat)
+                    $startHour = 18; // Default Mon-Fri
+                    if ($dayOfWeek == 6) { // Saturday
+                        $startHour = 15;
+                    } elseif ($dayOfWeek == 0) { // Sunday (biasanya masuk standby, tapi jika lembur dihitung dari pagi/full?)
+                        $startHour = 0; // Asumsi jika hari minggu lembur dihitung semua
+                    }
+
+                    $overtimeStart = $mulai->copy()->hour($startHour)->minute(0)->second(0);
+                    
+                    // Jika waktu mulai lapor sebenarnya lebih lambat dari jam masuk window,
+                    // maka perhitungan dimulai dari waktu mulai lapor.
+                    // Jika waktu mulai lapor sebelum jam window, maka perhitungan mulai dari jam window.
+                    $calcStart = $mulai->gt($overtimeStart) ? $mulai : $overtimeStart;
+
+                    if ($selesai->gt($calcStart)) {
+                        $diffInMinutes = $selesai->diffInMinutes($calcStart);
+                        $jam = $diffInMinutes / 60.0;
+                        $nominal = $jam * $hargaLemburPerJam;
+                        
+                        // Cap dengan maksimal nominal per klaim
+                        if ($maxNominalLembur > 0 && $nominal > $maxNominalLembur) {
+                            $nominal = $maxNominalLembur;
+                        }
+                        
+                        $l->earned_nominal = $nominal; // Simpan nominal ke object untuk detail preview
+                        $biayaLembur += $nominal;
+                    } else {
+                         $l->earned_nominal = 0;
+                    }
+                } else {
+                     $l->earned_nominal = 0;
+                }
+            }
+
+            foreach ($userStandbies as $s) {
+                if ($s->jenis_standby === 'minggu') {
+                    $biayaStandby += $hargaStandbyMinggu;
+                } else {
+                    $biayaStandby += $hargaStandbyBiasa;
+                }
+            }
+
             return [
                 'user' => $user,
                 'total_share' => $userShares->count(),
                 'total_lembur' => $userLemburs->count(),
-                'total_biaya' => $userShares->sum('harga'),
+                'total_standby' => $userStandbies->count(),
+                'biaya_share' => $biayaShare,
+                'biaya_lembur' => $biayaLembur,
+                'biaya_standby' => $biayaStandby,
+                'total_biaya' => $biayaShare + $biayaLembur + $biayaStandby,
                 'details_share' => $userShares,
-                'details_lembur' => $userLemburs
+                'details_lembur' => $userLemburs,
+                'details_standby' => $userStandbies
             ];
         });
 
-        return view('admin.rekap', compact('rekapData', 'bulan'));
+        return view('admin.rekap', compact('rekapData', 'bulan', 'hargaStandbyMinggu', 'hargaStandbyBiasa'));
     }
 
     public function scanBarcode()

@@ -59,6 +59,14 @@
             <span class="pc-mtext">Mapping Grup WA</span>
           </a>
         </li>
+        <li class="pc-item @if(Request::is('admin/harga*')) active @endif">
+          <a href="{{ route('admin.harga') }}" class="pc-link">
+            <span class="pc-micon">
+              <i data-feather="dollar-sign"></i>
+            </span>
+            <span class="pc-mtext">Manajemen Harga</span>
+          </a>
+        </li>
         <li class="pc-item pc-caption mt-2">
           <label>KONTROL SERTIFIKAT</label>
         </li>

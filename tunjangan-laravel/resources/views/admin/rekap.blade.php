@@ -29,7 +29,7 @@
     <div class="card-header py-3 px-4 flex justify-between items-center bg-white border-b">
         <div>
             <h6 class="mb-0 font-bold text-gray-800">Ringkasan Laporan Per Karyawan</h6>
-            <p class="text-[10px] text-muted m-0 uppercase tracking-tighter">Monitoring aktivitas share lokasi & lembur bulanan</p>
+            <p class="text-[10px] text-muted m-0 uppercase tracking-tighter">Monitoring aktivitas share lokasi, lembur & standby bulanan</p>
         </div>
         <button class="btn btn-sm btn-success shadow-none flex items-center gap-2 px-3">
             <i data-feather="download" style="width: 14px; height: 14px;"></i> XLSX
@@ -55,6 +55,7 @@
                         <th class="text-[10px] font-bold text-gray-500 uppercase">Karyawan</th>
                         <th class="text-[10px] font-bold text-gray-500 uppercase text-center">Share Lokasi</th>
                         <th class="text-[10px] font-bold text-gray-500 uppercase text-center">Lembur</th>
+                        <th class="text-[10px] font-bold text-gray-500 uppercase text-center">Standby</th>
                         <th class="text-[10px] font-bold text-gray-500 uppercase text-right">Total Biaya (Rp)</th>
                         <th class="text-[10px] font-bold text-gray-500 uppercase text-center">Aksi</th>
                     </tr>
@@ -81,6 +82,9 @@
                         <td class="text-center">
                             <span class="text-xs font-semibold text-amber-600">{{ $data['total_lembur'] }}x</span>
                         </td>
+                        <td class="text-center">
+                            <span class="text-xs font-semibold text-success">{{ $data['total_standby'] }}x</span>
+                        </td>
                         <td class="text-right">
                             <span class="font-bold text-sm">Rp {{ number_format($data['total_biaya'], 0, ',', '.') }}</span>
                         </td>
@@ -93,7 +97,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="text-center py-10 text-muted italic">
+                        <td colspan="6" class="text-center py-10 text-muted italic">
                             Tidak ada data rekap untuk periode {{ $bulan }}.
                         </td>
                     </tr>
@@ -102,7 +106,7 @@
                 @if(count($rekapData) > 0)
                 <tfoot class="bg-gray-50">
                     <tr>
-                        <td colspan="3" class="text-right font-bold text-gray-500 uppercase tracking-widest" style="font-size: 10px;">GRAND TOTAL SELURUH KARYAWAN</td>
+                        <td colspan="4" class="text-right font-bold text-gray-500 uppercase tracking-widest" style="font-size: 10px;">GRAND TOTAL SELURUH KARYAWAN</td>
                         <td class="text-right font-black text-primary" style="font-size: 16px;">
                             Rp {{ number_format($grandTotalAll, 0, ',', '.') }}
                         </td>
@@ -141,6 +145,9 @@
                         <li class="nav-item">
                             <a class="nav-link text-xs" data-bs-toggle="tab" href="#tabLembur{{ $data['user']->id }}">📸 Lembur ({{ $data['total_lembur'] }})</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-xs" data-bs-toggle="tab" href="#tabStandby{{ $data['user']->id }}">🟢 Standby ({{ $data['total_standby'] }})</a>
+                        </li>
                     </ul>
                 </div>
                 <div class="tab-content">
@@ -152,7 +159,6 @@
                                     <tr>
                                         <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Waktu (WIB)</th>
                                         <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Rumah Sakit</th>
-                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Ket</th>
                                         <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase text-right">Biaya</th>
                                     </tr>
                                 </thead>
@@ -161,11 +167,16 @@
                                     <tr class="detail-row">
                                         <td class="px-4 py-2 small font-semibold">{{ \Carbon\Carbon::parse($s->waktu_share)->timezone('Asia/Jakarta')->format('d/m/y H:i') }}</td>
                                         <td class="px-4 py-2 small text-gray-700">{{ $s->rumahSakit->nama_rs ?? '-' }}</td>
-                                        <td class="px-4 py-2 small text-muted italic text-[11px]">{{ $s->keterangan }}</td>
                                         <td class="px-4 py-2 small text-right font-bold text-primary">Rp {{ number_format($s->harga, 0, ',', '.') }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <td colspan="2" class="px-4 py-2 text-[10px] font-bold uppercase text-gray-400">Subtotal Share Lokasi</td>
+                                        <td class="px-4 py-2 text-right font-bold text-primary">Rp {{ number_format($data['biaya_share'], 0, ',', '.') }}</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -175,33 +186,104 @@
                             <table class="table table-sm mb-0">
                                 <thead class="bg-white sticky-top top-0 shadow-sm">
                                     <tr>
-                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Waktu (WIB)</th>
-                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Lokasi</th>
-                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Ket</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Waktu Lapor</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Selesai</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Durasi Efektif</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase text-right">Earned</th>
                                         <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase text-center">Foto</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($data['details_lembur'] as $l)
                                     <tr class="detail-row">
-                                        <td class="px-4 py-2 small font-semibold">{{ \Carbon\Carbon::parse($l->waktu_mulai)->timezone('Asia/Jakarta')->format('d/m/y H:i') }}</td>
-                                        <td class="px-4 py-2 small text-gray-700">{{ $l->rumahSakit->nama_rs ?? '-' }}</td>
-                                        <td class="px-4 py-2 small text-muted italic text-[11px]">{{ $l->keterangan }}</td>
+                                        <td class="px-4 py-2 small font-semibold">
+                                            {{ \Carbon\Carbon::parse($l->waktu_mulai)->timezone('Asia/Jakarta')->format('d/m/y H:i') }}
+                                        </td>
+                                        <td class="px-4 py-2 small font-semibold">
+                                            {{ $l->waktu_selesai ? \Carbon\Carbon::parse($l->waktu_selesai)->timezone('Asia/Jakarta')->format('d/m/y H:i') : '-' }}
+                                        </td>
+                                        <td class="px-4 py-2 small text-gray-700">
+                                            @if($l->waktu_mulai && $l->waktu_selesai)
+                                                @php
+                                                    $mulai = \Carbon\Carbon::parse($l->waktu_mulai);
+                                                    $selesai = \Carbon\Carbon::parse($l->waktu_selesai);
+                                                    $day = $mulai->dayOfWeek;
+                                                    $startHr = ($day == 6) ? 15 : ($day == 0 ? 0 : 18);
+                                                    $winStart = $mulai->copy()->hour($startHr)->minute(0)->second(0);
+                                                    $calcStart = $mulai->gt($winStart) ? $mulai : $winStart;
+                                                    
+                                                    $diffMin = 0;
+                                                    if($selesai->gt($calcStart)) {
+                                                        $diffMin = $selesai->diffInMinutes($calcStart);
+                                                    }
+                                                    $h = floor($diffMin / 60);
+                                                    $m = $diffMin % 60;
+                                                @endphp
+                                                {{ $h }}j {{ $m }}m
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-2 small text-right font-bold text-amber-600">
+                                            Rp {{ number_format($l->earned_nominal ?? 0, 0, ',', '.') }}
+                                        </td>
                                         <td class="px-4 py-2 text-center">
                                             @if($l->foto_url)
-                                            <a href="{{ asset('storage/'.$l->foto_url) }}" target="_blank" class="btn btn-xs btn-outline-secondary py-0">Lihat</a>
+                                            <a href="{{ asset('storage/'.$l->foto_url) }}" target="_blank" class="btn btn-xs btn-outline-secondary py-0 text-[10px]">Lihat</a>
                                             @endif
                                         </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <td colspan="4" class="px-4 py-2 text-[10px] font-bold uppercase text-gray-400">Subtotal Lembur (Terhitung Rate & Max Nominal)</td>
+                                        <td class="px-4 py-2 text-right font-bold text-amber-600">Rp {{ number_format($data['biaya_lembur'], 0, ',', '.') }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Tab Standby -->
+                    <div id="tabStandby{{ $data['user']->id }}" class="tab-pane fade">
+                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm mb-0">
+                                <thead class="bg-white sticky-top top-0 shadow-sm">
+                                    <tr>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Tanggal</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Jenis</th>
+                                        <th class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase text-right">Biaya</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($data['details_standby'] as $st)
+                                    <tr class="detail-row">
+                                        <td class="px-4 py-2 small font-semibold">{{ \Carbon\Carbon::parse($st->tanggal)->format('d/m/y') }}</td>
+                                        <td class="px-4 py-2 small">
+                                            <span class="badge {{ $st->jenis_standby == 'minggu' ? 'bg-danger' : 'bg-primary' }}">
+                                                {{ $st->jenis_standby == 'minggu' ? 'Minggu' : 'Biasa' }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-2 small text-right font-bold">
+                                            Rp {{ number_format($st->jenis_standby == 'minggu' ? $hargaStandbyMinggu : $hargaStandbyBiasa, 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <td colspan="2" class="px-4 py-2 text-[10px] font-bold uppercase text-gray-400">Subtotal Standby</td>
+                                        <td class="px-4 py-2 text-right font-bold text-success">Rp {{ number_format($data['biaya_standby'], 0, ',', '.') }}</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer border-t bg-gray-50 flex justify-between items-center py-3">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Akumulasi</span>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Akumulasi Periode</span>
                 <span class="font-black text-lg text-primary">Rp {{ number_format($data['total_biaya'], 0, ',', '.') }}</span>
             </div>
         </div>

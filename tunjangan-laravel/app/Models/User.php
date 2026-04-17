@@ -56,4 +56,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Lembur::class);
     }
+
+    public function standby()
+    {
+        return $this->hasMany(Standby::class);
+    }
 }

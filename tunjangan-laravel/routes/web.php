@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminTunjanganController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceSettingController;
+use App\Http\Controllers\PriceController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -58,6 +59,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/master-lokasi/sync', 'syncLokasi')->name('admin.master-lokasi.sync');
 
         Route::get('/master-sertifikat', 'masterSertifikat')->name('admin.master-sertifikat');
+
+        // Price Management
+        Route::get('/harga', [PriceController::class, 'index'])->name('admin.harga');
+        Route::post('/harga/rs', [PriceController::class, 'updateRS'])->name('admin.harga.rs');
+        Route::post('/harga/general', [PriceController::class, 'updateGeneral'])->name('admin.harga.general');
     });
 
     // ABSENSI PIVOT TOOL
