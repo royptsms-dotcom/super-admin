@@ -19,5 +19,10 @@ yarn-error.log
 /.vscode
 
 # WA Bot Sessions & Logs
-wa-bot/sessions/
+wa-bot/sessions/**
+wa-bot/sessions/*
 wa-bot/wa-bot.log
+**/sessions/**
+**/creds.json
+**/session-*.json
+**/sender-key-*.json
