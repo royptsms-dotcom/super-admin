@@ -12,9 +12,20 @@ use Dompdf\Options;
 
 class CertificateController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $certificates = Certificate::latest()->paginate(10);
+        $query = Certificate::query();
+        
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('hospital_name', 'like', "%{$search}%")
+                  ->orWhere('instrument_name', 'like', "%{$search}%")
+                  ->orWhere('certificate_number', 'like', "%{$search}%");
+            });
+        }
+        
+        $certificates = $query->latest()->paginate(10)->withQueryString();
         return view('certificates.index', compact('certificates'));
     }
 

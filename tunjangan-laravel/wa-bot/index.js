@@ -62,10 +62,14 @@ async function startSession(sessionId, phoneNumber = null) {
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             sessions[sessionId].connected = false;
             
-            if (statusCode !== DisconnectReason.loggedOut) {
-                console.log(`[WA] Sesi "${sessionId}" terputus, mencoba kembali dalam 5 detik...`);
+            // Reconnect jika bukan karena logout manual
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            
+            if (shouldReconnect) {
+                console.log(`[WA] Sesi "${sessionId}" terputus (Status: ${statusCode}), menyambung kembali...`);
                 setTimeout(() => startSession(sessionId), 5000);
             } else {
+                console.log(`[WA] Sesi "${sessionId}" Logged Out. Menghapus folder data.`);
                 delete sessions[sessionId];
                 if (fs.existsSync(authDir)) fs.rmSync(authDir, { recursive: true, force: true });
             }
@@ -73,7 +77,7 @@ async function startSession(sessionId, phoneNumber = null) {
             sessions[sessionId].connected = true;
             sessions[sessionId].qr = null;
             sessions[sessionId].pairingCode = null;
-            console.log(`[WA] Sesi "${sessionId}" Aktif!`);
+            console.log(`[WA] Sesi "${sessionId}" BERHASIL TERHUBUNG!`);
         }
     });
 

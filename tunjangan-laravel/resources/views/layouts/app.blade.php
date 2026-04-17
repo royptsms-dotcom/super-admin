@@ -82,6 +82,16 @@
       </div>
     </div>
 
+    <footer class="pc-footer">
+      <div class="footer-wrapper container-fluid">
+        <div class="row align-items-center">
+          <div class="col-sm-6 my-1">
+            <p class="m-0 text-muted" style="font-size: 13px;">© {{ date('Y') }} Calibration Dashboard. Powered by <span class="text-primary fw-bold" style="letter-spacing: 0.5px;">Roy Leonardo Decaf Rio</span></p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
     @stack('modals')
     <script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -127,6 +137,36 @@
               if (loader) loader.style.display = 'none';
           }, 400);
       });
+    </script>
+    <script>
+        // Global WA Bot Monitor
+        function checkWaServer() {
+            const BOT_URL = "http://" + window.location.hostname + ":3001";
+            const indicator = document.getElementById('global-wa-status');
+            if(!indicator) return;
+
+            fetch(BOT_URL + '/api/wa/ping')
+                .then(res => res.json())
+                .then(data => {
+                    if(data.pong) {
+                        indicator.innerHTML = `
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                            </span>
+                            <span class="text-success text-[10px] font-bold">ONLINE</span>`;
+                    }
+                })
+                .catch(() => {
+                    indicator.innerHTML = `
+                        <span class="relative flex h-2 w-2">
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-danger"></span>
+                        </span>
+                        <span class="text-danger text-[10px] font-bold">OFFLINE (SERVER 2 MATI)</span>`;
+                });
+        }
+        setInterval(checkWaServer, 5000);
+        checkWaServer();
     </script>
     @stack('scripts')
   </body>

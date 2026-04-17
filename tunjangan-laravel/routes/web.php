@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AdminTunjanganController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceSettingController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -28,6 +30,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::controller(CertificateController::class)->group(function () {
         Route::get('/certificates', 'index')->name('certificates.index');
         Route::get('/certificates/create', 'create')->name('certificates.create');
+        Route::get('/certificates/get-count', 'getCount')->name('certificates.count');
         Route::post('/certificates', 'store')->name('certificates.store');
         Route::get('/certificates/download/{certificate}', 'download')->name('certificates.download');
         Route::delete('/certificates/{certificate}', 'destroy')->name('certificates.destroy');
@@ -55,6 +58,17 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/master-lokasi/sync', 'syncLokasi')->name('admin.master-lokasi.sync');
 
         Route::get('/master-sertifikat', 'masterSertifikat')->name('admin.master-sertifikat');
+    });
+
+    // ABSENSI PIVOT TOOL
+    Route::prefix('admin/absensi')->name('admin.absensi.')->group(function () {
+        Route::get('/rekap', [AttendanceController::class, 'index'])->name('rekap');
+        Route::post('/import', [AttendanceController::class, 'import'])->name('import');
+        Route::get('/export', [AttendanceController::class, 'export'])->name('export');
+        Route::get('/export-detail', [AttendanceController::class, 'exportDetail'])->name('export-detail');
+        
+        Route::get('/settings', [AttendanceSettingController::class, 'index'])->name('settings');
+        Route::post('/settings', [AttendanceSettingController::class, 'update'])->name('settings.update');
     });
 });
 
