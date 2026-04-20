@@ -42,8 +42,8 @@
                     <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 d-block tracking-widest">Filter Bulan</label>
                     <input type="month" name="bulan" class="form-control form-control-sm" value="{{ $bulan }}" style="border-radius: 8px; width: 180px;">
                 </div>
-                <button type="submit" class="btn btn-sm btn-primary px-4" style="border-radius: 8px; height: 35px;">
-                    <i data-feather="refresh-cw" class="w-3 h-3 mr-1"></i> Update
+                <button type="submit" class="btn btn-sm btn-primary px-4 d-inline-flex align-items-center justify-content-center gap-1" style="border-radius: 8px; height: 35px;">
+                    <i data-feather="refresh-cw" style="width: 12px; height: 12px; margin-top: -1px;"></i> <span style="margin-top: 1px;">Update</span>
                 </button>
             </form>
         </div>

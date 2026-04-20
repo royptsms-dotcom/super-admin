@@ -32,8 +32,8 @@
                             </a>
                         @endif
                     </form>
-                    <a href="{{ route('certificates.create') }}" class="btn btn-primary btn-sm px-4">
-                        <i data-feather="plus-circle" class="me-1" style="width: 14px; height: 14px;"></i> Generate Baru
+                    <a href="{{ route('certificates.create') }}" class="btn btn-primary btn-sm px-4 d-inline-flex align-items-center justify-content-center gap-1">
+                        <i data-feather="plus-circle" style="width: 14px; height: 14px; margin-top: -1px;"></i> Generate Baru
                     </a>
                 </div>
             </div>

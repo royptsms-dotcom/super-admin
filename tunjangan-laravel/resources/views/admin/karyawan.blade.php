@@ -76,8 +76,8 @@
             <!-- Fitur Pencarian -->
             <input type="text" id="searchInput" class="search-input form-control-sm d-inline-block" placeholder="Cari Nama / ID..." onkeyup="filterTable()">
             
-            <button onclick="openModalTambah()" class="btn btn-primary btn-mungil shadow-none">
-                <i data-feather="plus" style="width: 12px; height: 12px; margin-right: 2px;"></i> Tambah
+            <button onclick="openModalTambah()" class="btn btn-primary btn-mungil shadow-none d-inline-flex align-items-center justify-content-center gap-1">
+                <i data-feather="plus" style="width: 12px; height: 12px; margin-top: -1px;"></i> Tambah
             </button>
         </div>
     </div>
@@ -564,11 +564,6 @@
     // Run on load and after a short delay to ensure everything is ready
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(initializeStatusCheck, 500);
-    });
-
-    // Also handle possible dynamic menu changes if any
-    window.addEventListener('load', function() {
-        setTimeout(initializeStatusCheck, 1500);
     });
 
 </script>
