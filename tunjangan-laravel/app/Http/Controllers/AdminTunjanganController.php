@@ -306,4 +306,18 @@ class AdminTunjanganController extends Controller
         }
         return response()->json(['success' => true]);
     }
+
+    public function checkWaStatus($id)
+    {
+        $isOnline = \Illuminate\Support\Facades\Cache::remember('wa_status_' . $id, 5, function() use ($id) {
+            try {
+                $res = \Illuminate\Support\Facades\Http::timeout(3)->get("http://localhost:3001/api/wa/status/user_{$id}");
+                return ($res->ok() && $res->json('connected'));
+            } catch (\Exception $e) {
+                return false;
+            }
+        });
+
+        return response()->json(['connected' => $isOnline]);
+    }
 }

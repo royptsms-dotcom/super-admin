@@ -24,9 +24,13 @@ class AuthController extends Controller
         
         if (Auth::attempt([$field => $request->login, 'password' => $request->password])) {
             $user = Auth::user();
-            if ($user->role !== 'admin') {
+            // Cek apakah Admin murni ATAU User yang punya akses Dashboard
+            $permission = \App\Models\JobPermission::whereRaw('UPPER(job) = ?', [strtoupper($user->job)])->first();
+            $hasDashboardAccess = $permission && is_array($permission->permissions) && in_array('dashboard', $permission->permissions);
+
+            if ($user->role !== 'admin' && !$hasDashboardAccess) {
                 Auth::logout();
-                return back()->withErrors(['login' => 'Akses ditolak. Dashboard hanya untuk Admin.']);
+                return back()->withErrors(['login' => 'Akses ditolak. Dashboard hanya untuk Admin atau Jabatan yang diizinkan (Cek menu Izin Akses).']);
             }
             $request->session()->regenerate();
             return redirect()->intended('admin/dashboard');
@@ -59,9 +63,9 @@ class AuthController extends Controller
             return response()->json(['error' => 'ID atau Password salah'], 401);
         }
 
-        // Cek Role - User ONLY for API
-        if ($user->role !== 'user') {
-            return response()->json(['error' => 'Akses ditolak. Mobile App hanya untuk User.'], 403);
+        // Cek Role - Admin & User can access API
+        if ($user->role !== 'user' && $user->role !== 'admin') {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
         }
 
         // Hapus token lama biar gak nyangkut

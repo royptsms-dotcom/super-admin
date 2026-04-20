@@ -42,61 +42,75 @@
     </style>
 
     @if(isset($attendanceData))
-    <div class="col-span-12">
-        <div class="card">
-            <div class="card-header flex justify-between items-center">
-                <h5>Hasil Rekapan: {{ $selectedMonth }}</h5>
-                <a href="{{ route('admin.absensi.export', ['data' => base64_encode(serialize($attendanceData))]) }}" class="btn btn-success btn-sm shadow-sm d-inline-flex align-items-center" style="white-space: nowrap;">
-                    <i data-feather="download" class="mr-1" style="width:14px; height:14px;"></i> Unduh XLSX
-                </a>
-            </div>
+        @if(Auth::user()->hasPermission('admin.absensi.export'))
+        <div class="col-span-12">
+            <div class="card">
+                <div class="card-header flex justify-between items-center">
+                    <h5>Hasil Rekapan: {{ \Carbon\Carbon::parse($selectedMonth)->translatedFormat('F Y') }}</h5>
+                    <a href="{{ route('admin.absensi.export', ['data' => base64_encode(serialize($attendanceData))]) }}" class="btn btn-success btn-sm shadow-sm d-inline-flex align-items-center" style="white-space: nowrap;">
+                        <i data-feather="download" class="mr-1" style="width:14px; height:14px;"></i> Unduh XLSX
+                    </a>
+                </div>
 
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th onclick="sortTable(0)" style="cursor:pointer" title="Urutkan ID">ID</th>
-                                <th onclick="sortTable(1)" style="cursor:pointer" title="Urutkan Nama">Nama Karyawan</th>
-                                <th class="text-center">Hadir</th>
-                                <th class="text-center text-danger">Terlambat</th>
-                                <th class="text-center text-primary">Pulang</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php
-                                $settingsPath = storage_path('app/attendance_settings.json');
-                                $settings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : ['check_in_limit' => '08:00', 'check_out_limit' => '17:00'];
-                            @endphp
-                            @foreach($attendanceData as $row)
-                            <tr>
-                                <td>{{ !empty($row['id']) ? $row['id'] : '-' }}</td>
-                                <td>{{ $row['name'] ?? 'Tanpa Nama' }}</td>
-                                <td class="text-center">{{ $row['present'] ?? 0 }} hari</td>
-                                <td class="text-center">
-                                    <span class="badge {{ ($row['late'] ?? 0) > 0 ? 'bg-light-danger text-danger' : 'bg-light-success text-success' }}">
-                                        {{ $row['late'] ?? 0 }}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge {{ ($row['out'] ?? 0) > 0 ? 'bg-light-primary text-primary' : 'bg-light-secondary text-secondary' }}">
-                                        {{ $row['out'] ?? 0 }}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-light-info" onclick="showDetail({{ json_encode($row) }}, {{ json_encode($settings) }})">
-                                        <i data-feather="eye" style="width: 14px; height: 14px;"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortTable(0)" style="cursor:pointer" title="Urutkan ID">ID</th>
+                                    <th onclick="sortTable(1)" style="cursor:pointer" title="Urutkan Nama">Nama Karyawan</th>
+                                    <th class="text-center">Hadir</th>
+                                    <th class="text-center text-danger">Terlambat</th>
+                                    <th class="text-center text-primary">Pulang</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $settingsPath = storage_path('app/attendance_settings.json');
+                                    $settings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : ['check_in_limit' => '08:00', 'check_out_limit' => '17:00'];
+                                @endphp
+                                @foreach($attendanceData as $row)
+                                <tr>
+                                    <td>{{ !empty($row['id']) ? $row['id'] : '-' }}</td>
+                                    <td>{{ $row['name'] ?? 'Tanpa Nama' }}</td>
+                                    <td class="text-center">{{ $row['present'] ?? 0 }} hari</td>
+                                    <td class="text-center">
+                                        <span class="badge {{ ($row['late'] ?? 0) > 0 ? 'bg-light-danger text-danger' : 'bg-light-success text-success' }}">
+                                            {{ $row['late'] ?? 0 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {{ ($row['out'] ?? 0) > 0 ? 'bg-light-primary text-primary' : 'bg-light-secondary text-secondary' }}">
+                                            {{ $row['out'] ?? 0 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-light-info" onclick="showDetail({{ json_encode($row) }}, {{ json_encode($settings) }})">
+                                            <i data-feather="eye" style="width: 14px; height: 14px;"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        @else
+        <div class="col-span-12">
+            <div class="card bg-success/10 border-success/20">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3">
+                        <i data-feather="check-circle" class="text-success" style="width: 48px; height: 48px;"></i>
+                    </div>
+                    <h5 class="text-success mb-2">Data Absensi Berhasil Diupload</h5>
+                    <p class="text-muted m-0">Data absensi periode <strong>{{ \Carbon\Carbon::parse($selectedMonth)->translatedFormat('F Y') }}</strong> telah berhasil diproses ke dalam sistem.</p>
+                </div>
+            </div>
+        </div>
+        @endif
     @else
     <div class="col-span-12">
         <div class="card">

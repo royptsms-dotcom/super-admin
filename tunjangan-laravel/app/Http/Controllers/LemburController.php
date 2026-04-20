@@ -117,11 +117,15 @@ class LemburController extends Controller
         $text = "📸 *LAPORAN LEMBUR (MOBILE)*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Nama:* {$user->name}\n🏥 *Lokasi:* ".($rs->nama_rs ?? 'Titik GPS')."{$tagText}\n🕐 *Mulai:* {$waktuStr}\n📝 *Ket:* {$request->keterangan}\n━━━━━━━━━━━━━━━━━━━━\n🗺️ *Maps:* {$mapsUrl}";
 
         try {
+            // Konstruksi URL Foto (Agar Bot bisa download fotonya)
+            $imageUrl = $lembur->foto_url ? url('storage/' . $lembur->foto_url) : null;
+
             // Kirim ke Microservice Node.js
             $resWa = Http::timeout(5)->post('http://127.0.0.1:3001/api/wa/send', [
                 'sessionId' => $sessionId,
                 'to' => $targetGroup,
-                'text' => $text
+                'text' => $text,
+                'imageUrl' => $imageUrl
             ]);
 
             if (!$resWa->successful()) {

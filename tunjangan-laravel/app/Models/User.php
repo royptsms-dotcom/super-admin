@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -24,6 +25,7 @@ class User extends Authenticatable
         'password',
         'no_wa',
         'job',
+        'wa_group_id',
         'role',
     ];
 
@@ -60,5 +62,54 @@ class User extends Authenticatable
     public function standby()
     {
         return $this->hasMany(Standby::class);
+    }
+
+    /**
+     * Mutator for job to always save as uppercase
+     */
+    protected function job(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => strtoupper($value),
+        );
+    }
+
+    /**
+     * Mutator for role to always save as uppercase
+     */
+    protected function role(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => strtoupper($value),
+        );
+    }
+
+    /**
+     * Check if user has permission for a specific route
+     */
+    public function hasPermission($route)
+    {
+        // 1. Super Admin (role admin tanpa job spesifik) punya akses semua
+        if ($this->role === 'admin' && empty($this->job)) {
+            return true;
+        }
+
+        // 2. Jika tidak punya job, cek role admin saja
+        if (empty($this->job)) {
+            return $this->role === 'admin';
+        }
+
+        // 3. Cek Permission berdasarkan Job di tabel baru
+        $permission = \App\Models\JobPermission::whereRaw('UPPER(job) = ?', [strtoupper($this->job)])->first();
+        
+        if (!$permission) {
+            // Default: Admin boleh masuk, User biasa tidak
+            return $this->role === 'admin';
+        }
+
+        $allowedList = is_array($permission->permissions) ? $permission->permissions : [];
+
+        // Cek apakah route ada di list yang diizinkan
+        return in_array($route, $allowedList);
     }
 }

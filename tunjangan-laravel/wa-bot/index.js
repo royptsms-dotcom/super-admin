@@ -116,8 +116,8 @@ app.get('/api/wa/pair-code/:sessionId', async (req, res) => {
 
 // Endpoint kirim pesan (Multi-Session)
 app.post('/api/wa/send', async (req, res) => {
-    const { sessionId, to, text } = req.body;
-    console.log('DEBUG: Menerima request kirim ke:', to);
+    const { sessionId, to, text, imageUrl } = req.body;
+    console.log('DEBUG: Menerima request kirim ke:', to, imageUrl ? '(With Image)' : '(Text Only)');
     const s = sessions[sessionId];
 
     if (!s || !s.connected) {
@@ -126,16 +126,26 @@ app.post('/api/wa/send', async (req, res) => {
     }
 
     try {
-        // Validasi JID Dasar
         if (!to) {
-            console.error(`[Error] ID Tujuan (JID) kosong!`);
             return res.status(400).json({ error: 'ID Grup/Tujuan wajib diisi!' });
         }
 
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
-        await s.sock.sendMessage(jid, { text });
+        
+        if (imageUrl) {
+            // KIRIM GAMBAR DENGAN CAPTION
+            await s.sock.sendMessage(jid, { 
+                image: { url: imageUrl }, 
+                caption: text 
+            });
+        } else {
+            // KIRIM TEKS SAJA
+            await s.sock.sendMessage(jid, { text });
+        }
+        
         res.json({ success: true });
     } catch (err) {
+        console.error('[WA Error]:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

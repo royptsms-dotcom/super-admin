@@ -21,7 +21,7 @@ Route::post('/login', [AuthController::class, 'postLogin'])->name('postLogin');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected Admin Routes
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'permission'])->group(function () {
     Route::controller(SettingController::class)->group(function () {
         Route::get('/settings', 'index')->name('settings.index');
         Route::post('/settings', 'update')->name('settings.update');
@@ -57,8 +57,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/master-lokasi', 'masterLokasi')->name('admin.master-lokasi');
         Route::post('/master-lokasi', 'masterLokasiStore')->name('admin.master-lokasi.store');
         Route::get('/master-lokasi/sync', 'syncLokasi')->name('admin.master-lokasi.sync');
+        Route::get('/karyawan/status/{id}', 'checkWaStatus')->name('admin.karyawan.status');
 
         Route::get('/master-sertifikat', 'masterSertifikat')->name('admin.master-sertifikat');
+
+        // Permission Management
+        Route::get('/permissions', [\App\Http\Controllers\PermissionController::class, 'index'])->name('admin.permissions');
+        Route::post('/permissions', [\App\Http\Controllers\PermissionController::class, 'store'])->name('admin.permissions.store');
+        Route::get('/permissions/{job}', [\App\Http\Controllers\PermissionController::class, 'getPermissions'])->name('admin.permissions.get');
 
         // Price Management
         Route::get('/harga', [PriceController::class, 'index'])->name('admin.harga');

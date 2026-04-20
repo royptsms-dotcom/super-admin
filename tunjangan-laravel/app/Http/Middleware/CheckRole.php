@@ -15,9 +15,10 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!$request->user() || $request->user()->role !== $role) {
+        // Allow admin to bypass role checks, or check if role matches
+        if (!$request->user() || ($request->user()->role !== 'admin' && $request->user()->role !== $role)) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Unauthorized. Only ' . $role . ' can access this resource.'], 403);
+                return response()->json(['message' => 'Unauthorized. Access restricted to ' . $role . ' role.'], 403);
             }
             
             return redirect('/')->with('error', 'Anda tidak memiliki akses ke halaman ini.');

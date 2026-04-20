@@ -450,26 +450,45 @@
 
     function switchMode(mode) {
         clearInterval(modeInterval);
-        document.getElementById('pair-loading').classList.remove('d-none');
-        document.getElementById('pair-qr-area').classList.add('d-none');
-        document.getElementById('pair-code-area').classList.add('d-none');
+        const loadingBox = document.getElementById('pair-loading');
+        const qrArea = document.getElementById('pair-qr-area');
+        const codeArea = document.getElementById('pair-code-area');
+        const qrImg = document.getElementById('display-qr-img');
+        const codeText = document.getElementById('display-pair-code');
+
+        loadingBox.classList.remove('d-none');
+        qrArea.classList.add('d-none');
+        codeArea.classList.add('d-none');
         
         document.getElementById('btn-mode-qr').classList.toggle('active', mode === 'qr');
         document.getElementById('btn-mode-code').classList.toggle('active', mode === 'code');
 
         if(mode === 'qr') {
-            fetch(`${BOT_URL}/api/wa/qr/user_${currentPairId}`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('pair-loading').classList.add('d-none');
-                    if(data.qr) {
-                        document.getElementById('display-qr-img').src = data.qr;
-                        document.getElementById('pair-qr-area').classList.remove('d-none');
-                    }
-                });
-            
-            // Re-fetch QR every 30s
-            modeInterval = setInterval(() => switchMode('qr'), 30000);
+            qrImg.src = ""; // Reset
+            let attempts = 0;
+            const fetchQR = () => {
+                fetch(`${BOT_URL}/api/wa/qr/user_${currentPairId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.status === 'waiting' && data.qr) {
+                            loadingBox.classList.add('d-none');
+                            qrImg.src = data.qr;
+                            qrArea.classList.remove('d-none');
+                        } else if (data.status === 'connected') {
+                            loadingBox.innerHTML = '<p class="text-success font-bold">Terhubung!</p>';
+                        } else {
+                            // Masih generating, coba lagi
+                            attempts++;
+                            if(attempts < 10) setTimeout(fetchQR, 2000);
+                            else loadingBox.innerHTML = '<p class="text-danger">Gagal memuat QR. Coba lagi nanti.</p>';
+                        }
+                    })
+                    .catch(() => {
+                        loadingBox.innerHTML = '<p class="text-danger">Bot Server tidak aktif (Port 3001)</p>';
+                    });
+            };
+            fetchQR();
+            modeInterval = setInterval(fetchQR, 30000);
         } else {
             let cleanPhone = currentPairPhone.replace(/[^0-9]/g, '');
             if(cleanPhone.startsWith('0')) cleanPhone = '62' + cleanPhone.substring(1);
@@ -477,15 +496,18 @@
             fetch(`${BOT_URL}/api/wa/pair-code/user_${currentPairId}?phone=${cleanPhone}`)
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('pair-loading').classList.add('d-none');
+                    loadingBox.classList.add('d-none');
                     if(data.code) {
-                        document.getElementById('display-pair-code').innerText = data.code;
-                        document.getElementById('pair-code-area').classList.remove('d-none');
+                        codeText.innerText = data.code;
+                        codeArea.classList.remove('d-none');
                     }
+                })
+                .catch(() => {
+                    loadingBox.innerHTML = '<p class="text-danger">Gagal mendapatkan kode.</p>';
                 });
         }
         
-        // Start checking connection status
+        // Start checking connection status using our new centralized Laravel endpoint
         if(!statusInterval) startPollingStatus(currentPairId);
     }
 
@@ -509,7 +531,7 @@
 
     function startPollingStatus(id) {
         statusInterval = setInterval(() => {
-            fetch(`${BOT_URL}/api/wa/status/user_${id}`)
+            fetch(`{{ url('admin/karyawan/status') }}/${id}`)
                 .then(res => res.json())
                 .then(data => {
                     if(data.connected) {
@@ -518,9 +540,11 @@
                             closeModalPairing();
                             alert('WhatsApp Berhasil Terhubung!');
                         }
+                    } else {
+                        updateBadgeStatus(id, false);
                     }
                 });
-        }, 3000);
+        }, 5000);
     }
 
     // Init status saat halaman load
@@ -528,20 +552,12 @@
         const rows = document.querySelectorAll('[id^="wa-status-"]');
         rows.forEach(row => {
             const id = row.id.replace('wa-status-', '');
-            fetch(`${BOT_URL}/api/wa/status/user_${id}`)
+            fetch(`{{ url('admin/karyawan/status') }}/${id}`)
                 .then(res => res.json())
                 .then(data => {
                     updateBadgeStatus(id, data.connected);
                 })
-                .catch(() => {
-                    // Try again once after a short delay if failed
-                    setTimeout(() => {
-                        fetch(`${BOT_URL}/api/wa/status/user_${id}`)
-                            .then(res => res.json())
-                            .then(data => updateBadgeStatus(id, data.connected))
-                            .catch(() => updateBadgeStatus(id, false));
-                    }, 2000);
-                });
+                .catch(() => updateBadgeStatus(id, false));
         });
     }
 
