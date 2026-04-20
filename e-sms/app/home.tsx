@@ -20,11 +20,30 @@ export default function HomeScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning]     = useState(false);
 
+  const [groupName, setGroupName] = useState<string | null>(null);
+
   async function handleBarCodeScanned({ data }: any) {
     setIsScanning(false);
-    await AsyncStorage.setItem('forward_wa_group_id', data);
-    Alert.alert('Berhasil! ✅', `Semua laporan akan dikirim ke Grup: ${data}`);
-    checkWAStatus();
+    try {
+      // Data format: "gid|gname" (atau cuma gid)
+      const parts = data.split('|');
+      const gid = parts[0];
+      const gname = parts[1] || gid;
+
+      // 1. Simpan ke Server (Permanen Selamanya)
+      await api.post('/auth/update-group', { group_id: gid });
+
+      // 2. Simpan cadangan lokal
+      await AsyncStorage.setItem('forward_wa_group_id', gid);
+      if(parts[1]) await AsyncStorage.setItem('forward_wa_group_name', gname);
+
+      setGroupId(gid);
+      setGroupName(gname);
+      Alert.alert('Berhasil! ✅', `Tautan Grup WA berhasil disimpan selamanya.`);
+      checkWAStatus();
+    } catch (e) {
+      Alert.alert('Gagal', 'Server tidak merespon saat menyimpan grup.');
+    }
   }
 
   const [waOnline, setWaOnline]     = useState(false);
@@ -33,18 +52,32 @@ export default function HomeScreen() {
   useEffect(() => {
     AsyncStorage.getItem('user').then(u => { if (u) setUser(JSON.parse(u)); });
     checkWAStatus();
-    const interval = setInterval(checkWAStatus, 15000); // Cek tiap 15 detik
+    const interval = setInterval(checkWAStatus, 15000); // Cek tiap 15 detik (Auto)
     return () => clearInterval(interval);
   }, []);
 
-  async function checkWAStatus() {
+  async function checkWAStatus(force = false) {
     try {
-      const gid = await AsyncStorage.getItem('forward_wa_group_id');
-      setGroupId(gid);
-      const res = await api.get('/wa-status');
-      setWaOnline(res.data.online && !!gid);
-    } catch {
-      setWaOnline(false);
+      const res = await api.get('/wa-status' + (force ? '?refresh=1' : ''));
+      
+      // Update Group Info
+      if (res.data.groupId) {
+          setGroupId(res.data.groupId);
+          setGroupName(res.data.groupName || 'Grup Terpilih');
+      } else {
+          const localGid = await AsyncStorage.getItem('forward_wa_group_id');
+          const localGname = await AsyncStorage.getItem('forward_wa_group_name');
+          setGroupId(localGid);
+          setGroupName(localGname || '');
+      }
+      
+      // Update Status WA
+      setWaOnline(res.data.online === true);
+    } catch (err) {
+      // JANGAN setWaOnline(false) di sini! 
+      // Jika terjadi error jaringan (hotspot stutters), biarkan status terakhir tetap tampil.
+      // Ini mencegah status "mati-mati" padahal cuma sinyal hotspot yang goyang.
+      console.log("Network status check failed, keeping last state.");
     }
   }
 
@@ -96,10 +129,19 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>Selamat Datang 👋</Text>
           <Text style={styles.userName}>{user?.nama || '-'}</Text>
           <Text style={styles.userId}>ID: {user?.employee_id || '-'}</Text>
+          {!groupId && (
+            <Text style={{ color: '#ffeb3b', fontSize: 9, fontWeight: 'bold', marginTop: 4 }}>
+              ⚠️ BELUM SCAN QR GRUP
+            </Text>
+          )}
         </View>
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          {/* LED INDICATOR */}
-          <View style={{ alignItems: 'center', marginRight: 4 }}>
+          {/* LED INDICATOR (Clickable to Refresh) */}
+          <TouchableOpacity 
+            onPress={() => checkWAStatus(true)} 
+            style={{ alignItems: 'center', marginRight: 4, padding: 5 }}
+            activeOpacity={0.5}
+          >
             <View style={[
               styles.ledCircle, 
               { backgroundColor: waOnline ? '#2ECC40' : '#e63946' }
@@ -107,7 +149,7 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 8, color: '#fff', fontWeight: 'bold', marginTop: 2 }}>
               {waOnline ? 'ON' : 'OFF'}
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity onPress={() => setShowMenu(!showMenu)} style={styles.menuBtn}>
             <Text style={styles.menuIcon}>⋮</Text>
