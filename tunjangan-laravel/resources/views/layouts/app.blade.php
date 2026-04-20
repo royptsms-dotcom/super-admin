@@ -384,11 +384,15 @@
     @stack('styles')
     <script>
       (function() {
-        // Init Layout Choice
-        const savedLayout = localStorage.getItem('pc-layout') || 'vertical';
+        // Init Layout Choice - DEFAULT: HORIZONTAL (Dashboard 2)
+        const savedLayout = localStorage.getItem('pc-layout') || 'horizontal';
         if (savedLayout === 'horizontal') {
             document.documentElement.setAttribute('data-pc-layout', 'horizontal');
-            document.addEventListener('DOMContentLoaded', () => document.body.classList.add('layout-horizontal'));
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.classList.add('layout-horizontal');
+            });
+        } else {
+            document.documentElement.setAttribute('data-pc-layout', 'vertical');
         }
       })();
       
