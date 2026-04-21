@@ -64,6 +64,11 @@ class User extends Authenticatable
         return $this->hasMany(Standby::class);
     }
 
+    public function appNotifications()
+    {
+        return $this->hasMany(AppNotification::class);
+    }
+
     /**
      * Mutator for job to always save as uppercase
      */
@@ -108,6 +113,17 @@ class User extends Authenticatable
         }
 
         $allowedList = is_array($permission->permissions) ? $permission->permissions : [];
+        
+        // Aliases / Related Permissions
+        // Jika punya akses rekap, otomatis punya akses import (karena berada di menu yang sama)
+        if ($route === 'admin.absensi.import' && in_array('admin.absensi.rekap', $allowedList)) {
+            return true;
+        }
+
+        // Kebalikannya: Jika hanya punya akses 'Terima Laporan', boleh buka menu 'Rekap Absensi' (hanya untuk lihat hasil)
+        if ($route === 'admin.absensi.rekap' && in_array('admin.absensi.export', $allowedList)) {
+            return true;
+        }
 
         // Cek apakah route ada di list yang diizinkan
         return in_array($route, $allowedList);

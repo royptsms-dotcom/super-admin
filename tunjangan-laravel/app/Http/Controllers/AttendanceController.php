@@ -6,7 +6,11 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Session;
 use App\Models\Employee;
+use App\Models\User;
+use App\Models\JobPermission;
 use Carbon\Carbon;
+use App\Models\AppNotification;
+use Illuminate\Support\Facades\Http;
 
 class AttendanceController extends Controller
 {
@@ -14,7 +18,23 @@ class AttendanceController extends Controller
     {
         $attendanceData = Session::get('attendanceData');
         $selectedMonth = Session::get('selectedMonth');
-        return view('admin.absensi.rekap', compact('attendanceData', 'selectedMonth'));
+        $sharedInfo = null;
+
+        // Jika tidak ada data di session (misal user lain yang buka), ambil dari file shared terakhir
+        if (!$attendanceData) {
+            $sharedPath = storage_path('app/shared_attendance_data.json');
+            if (file_exists($sharedPath)) {
+                $shared = json_decode(file_get_contents($sharedPath), true);
+                $attendanceData = $shared['data'] ?? null;
+                $selectedMonth = $shared['month'] ?? null;
+                $sharedInfo = [
+                    'uploader' => $shared['uploader'] ?? 'System',
+                    'timestamp' => $shared['timestamp'] ?? null
+                ];
+            }
+        }
+        
+        return view('admin.absensi.rekap', compact('attendanceData', 'selectedMonth', 'sharedInfo'));
     }
 
 
@@ -277,6 +297,59 @@ class AttendanceController extends Controller
 
         Session::put('attendanceData', $finalData);
         Session::put('selectedMonth', $selectedMonthYear);
+
+        // --- SIMPAN SEBAGAI SHARED REPORT ---
+        try {
+            $sharedData = [
+                'data' => $finalData,
+                'month' => $selectedMonthYear,
+                'uploader' => auth()->user()->name ?? 'System',
+                'timestamp' => Carbon::now()->toDateTimeString()
+            ];
+            file_put_contents(storage_path('app/shared_attendance_data.json'), json_encode($sharedData));
+        } catch (\Exception $e) {
+            \Log::error("Failed to save shared attendance report: " . $e->getMessage());
+        }
+        // ------------------------------------
+
+        // --- NOTIFIKASI TERIMA LAPORAN ---
+        try {
+            $permissionKey = 'admin.absensi.export';
+            
+            $uploaderName = auth()->user()->name ?? 'System';
+            $waktu = Carbon::now()->timezone('Asia/Jakarta')->format('l, d F Y H:i:s');
+            $msg = "📢 *LAPORAN ABSENSI BARU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Oleh:* {$uploaderName}\n📅 *Periode:* {$selectedMonthYear}\n🕐 *Waktu Import:* {$waktu}\n━━━━━━━━━━━━━━━━━━━━\n⚠️ Data absensi terbaru telah berhasil di-import ke sistem. Silakan cek menu *Rekap Absensi* untuk detail selengkapnya.";
+
+            // Ambil semua user yang berpotensi menerima laporan
+            $allUsers = User::all();
+
+            foreach ($allUsers as $target) {
+                // Cek izin menggunakan hasPermission (mengcover Super Admin, Job Permission, dll)
+                if ($target->hasPermission($permissionKey)) {
+                    
+                    // 1. APP NOTIFICATION (Internal)
+                    AppNotification::create([
+                        'user_id' => $target->id,
+                        'title' => 'Update Laporan Absensi',
+                        'message' => "Laporan absensi periode {$selectedMonthYear} telah di-import oleh {$uploaderName}.",
+                        'link' => route('admin.absensi.rekap'),
+                        'is_read' => false
+                    ]);
+
+                    // 2. WHATSAPP NOTIFICATION (External) - Hanya jika ada nomor WA
+                    if (!empty($target->no_wa)) {
+                        Http::timeout(5)->post('http://127.0.0.1:3001/api/wa/send', [
+                            'sessionId' => 'report_bot',
+                            'to' => $target->no_wa,
+                            'text' => $msg
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error("Failed to send import notification: " . $e->getMessage());
+        }
+        // ---------------------------------
 
         return redirect()->route('admin.absensi.rekap');
     }

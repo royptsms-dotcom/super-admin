@@ -24,7 +24,7 @@ class CheckPermission
         $routeName = $request->route()->getName();
 
         // Allowed routes that don't need check (login, logout, etc.)
-        $allowedRoutes = ['login', 'postLogin', 'logout']; // dashboard is now controlled by permissions
+        $allowedRoutes = ['login', 'postLogin', 'logout', 'notifications.read', 'notifications.read-all']; // dashboard is now controlled by permissions
 
         if (in_array($routeName, $allowedRoutes)) {
             return $next($request);

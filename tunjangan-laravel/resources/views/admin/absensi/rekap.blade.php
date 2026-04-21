@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="grid grid-cols-12 gap-x-6">
+    @if(Auth::user()->hasPermission('admin.absensi.import'))
     <div class="col-span-12 mb-4">
         <div class="card">
             <div class="card-header">
@@ -32,6 +33,7 @@
             </div>
         </div>
     </div>
+    @endif
     
     <style>
         .btn-primary:hover {
@@ -46,7 +48,15 @@
         <div class="col-span-12">
             <div class="card">
                 <div class="card-header flex justify-between items-center">
-                    <h5>Hasil Rekapan: {{ \Carbon\Carbon::parse($selectedMonth)->translatedFormat('F Y') }}</h5>
+                    <div>
+                        <h5 class="mb-1">Hasil Rekapan: {{ \Carbon\Carbon::parse($selectedMonth)->translatedFormat('F Y') }}</h5>
+                        @if(isset($sharedInfo))
+                            <span class="text-xs text-muted">
+                                <i data-feather="info" class="inline-block" style="width:12px; height:12px;"></i> 
+                                Laporan terakhir di-update oleh <strong>{{ $sharedInfo['uploader'] }}</strong> pada {{ \Carbon\Carbon::parse($sharedInfo['timestamp'])->format('d M Y, H:i') }}
+                            </span>
+                        @endif
+                    </div>
                     <a href="{{ route('admin.absensi.export', ['data' => base64_encode(serialize($attendanceData))]) }}" class="btn btn-success btn-sm shadow-sm d-inline-flex align-items-center" style="white-space: nowrap;">
                         <i data-feather="download" class="mr-1" style="width:14px; height:14px;"></i> Unduh XLSX
                     </a>

@@ -38,6 +38,9 @@
           </a>
         </li>
 
+        <!-- Notifikasi -->
+        @include('partials.app-notifications')
+
         <!-- Mode Gelap Terang -->
         <li class="dropdown pc-h-item">
           <a class="pc-head-link dropdown-toggle me-0" data-pc-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">

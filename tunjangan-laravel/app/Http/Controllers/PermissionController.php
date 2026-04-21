@@ -28,9 +28,9 @@ class PermissionController extends Controller
                 'admin.karyawan' => ['label' => 'Data Karyawan'],
             ],
             'SHARE LOKASI & LAPORAN' => [
-                'admin.rekap' => ['label' => 'Menu Utama (Rekap/Laporan)', 'is_parent' => true],
-                'admin.wagroup' => ['label' => 'Mapping Grup WA', 'parent' => 'admin.rekap'],
-                'admin.harga' => ['label' => 'Manajemen Harga', 'parent' => 'admin.rekap'],
+                'admin.rekap' => ['label' => 'Tarik Laporan (Rekap)'],
+                'admin.wagroup' => ['label' => 'Mapping Grup WA'],
+                'admin.harga' => ['label' => 'Manajemen Harga'],
             ],
             'APLIKASI MOBILE (E-SMS)' => [
                 'share-lokasi.create' => ['label' => 'Input Share Lokasi', 'is_parent' => true],
@@ -38,15 +38,14 @@ class PermissionController extends Controller
                 'api.standby' => ['label' => 'Input Standby / On Call', 'parent' => 'share-lokasi.create'],
             ],
             'KONTROL SERTIFIKAT' => [
-                'certificates.index' => ['label' => 'Menu Utama (Database)', 'is_parent' => true],
-                'certificates.create' => ['label' => 'Generate Sertifikat', 'parent' => 'certificates.index'],
-                'admin.master-sertifikat' => ['label' => 'Pengaturan Master Sertifikat', 'parent' => 'certificates.index'],
+                'certificates.create' => ['label' => 'Generate Sertifikat'],
+                'certificates.index' => ['label' => 'Database Sertifikat'],
+                'admin.master-sertifikat' => ['label' => 'Pengaturan Master Sertifikat'],
             ],
             'ABSENSI' => [
-                'admin.absensi.rekap' => ['label' => 'Menu Utama Absensi', 'is_parent' => true],
-                'admin.absensi.import' => ['label' => 'Import Data Absensi', 'parent' => 'admin.absensi.rekap'],
-                'admin.absensi.export' => ['label' => 'Preview & Download Laporan', 'parent' => 'admin.absensi.rekap'],
-                'admin.absensi.settings' => ['label' => 'Pengaturan Absensi', 'parent' => 'admin.absensi.rekap'],
+                'admin.absensi.rekap' => ['label' => 'Rekap Absensi'],
+                'admin.absensi.export' => ['label' => 'Terima Laporan'],
+                'admin.absensi.settings' => ['label' => 'Pengaturan Absensi'],
             ],
         ];
 
