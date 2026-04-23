@@ -114,20 +114,31 @@ class LemburController extends Controller
             if (count($names) > 0) $tagText = "\n👥 *Bersama:* " . implode(", ", $names);
         }
 
-        $text = "📸 *LAPORAN LEMBUR (MOBILE)*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Nama:* {$user->name}\n🏥 *Lokasi:* ".($rs->nama_rs ?? 'Titik GPS')."{$tagText}\n🕐 *Mulai:* {$waktuStr}\n📝 *Ket:* {$request->keterangan}\n━━━━━━━━━━━━━━━━━━━━\n🗺️ *Maps:* {$mapsUrl}";
-
         try {
             // Konstruksi URL Foto (Agar Bot bisa download fotonya)
             $imageUrl = $lembur->foto_url ? url('storage/' . $lembur->foto_url) : null;
 
-            // Kirim ke Microservice Node.js
-            $resWa = Http::timeout(5)->post('http://127.0.0.1:3001/api/wa/send', [
-                'sessionId' => $sessionId,
-                'to' => $targetGroup,
-                'text' => $text,
-                'imageUrl' => $imageUrl
-            ]);
+            // Data untuk Watermark (Sesuai permintaan: Lokasi, Koordinat, Waktu, Note)
+            $watermark = [
+                'location' => $rs->nama_rs ?? 'Unknown RS',
+                'lat'      => $lembur->latitude,
+                'lng'      => $lembur->longitude,
+                'time'     => Carbon::parse($lembur->waktu_mulai)->timezone('Asia/Jakarta')->format('d/m/Y H:i'),
+                'note'     => "Captured by GPS Map Camera"
+            ];
 
+            // Pesan Caption (Tanpa Nama RS di awal teks pesan karena sudah ada di foto)
+            $caption = "👤 *Nama:* {$user->name}{$tagText}\n📝 *Ket:* {$request->keterangan}";
+
+            // Kirim ke Microservice Node.js
+            $resWa = Http::timeout(10)->post('http://127.0.0.1:3001/api/wa/send', [
+                'sessionId' => $sessionId,
+                'to'        => $targetGroup,
+                'text'      => $caption,
+                'imageUrl'  => $imageUrl,
+                'watermark' => $watermark
+            ]);
+            
             if (!$resWa->successful()) {
                 \Log::error("WA Lembur Failed: " . $resWa->body());
             }

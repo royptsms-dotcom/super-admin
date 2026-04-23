@@ -4,6 +4,9 @@ const P = require('pino');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const cors = require('cors');
+const axios = require('axios');
+const { Jimp } = require('jimp');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -114,6 +117,54 @@ app.get('/api/wa/pair-code/:sessionId', async (req, res) => {
     }, 1000);
 });
 
+async function addWatermark(imageUrl, data) {
+    try {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const image = await Jimp.read(Buffer.from(response.data));
+        
+        const width = image.bitmap.width;
+        const height = image.bitmap.height;
+ 
+        // Background Hitam Transparan di bawah
+        const rectHeight = Math.floor(height * 0.15);
+        const rectY = height - rectHeight;
+        
+        const overlay = new Jimp({ width, height: rectHeight, color: 0x00000088 });
+        image.composite(overlay, 0, rectY);
+ 
+        // Font (Default Jimp fonts)
+        const font = await Jimp.loadFont(width > 1000 ? Jimp.FONT_SANS_32_WHITE : Jimp.FONT_SANS_16_WHITE);
+ 
+        const margin = 20;
+        let currentY = rectY + 10;
+ 
+        const lines = [
+            `📍 ${data.location || 'Unknown Location'}`,
+            `🌐 Lat: ${data.lat}, Long: ${data.lng}`,
+            `⏰ ${data.time}`,
+            `📝 Note: ${data.note || '-'}`
+        ];
+ 
+        for (const line of lines) {
+            image.print({
+                font,
+                x: margin,
+                y: currentY,
+                text: line,
+                maxWidth: width - (margin * 2)
+            });
+            currentY += width > 1000 ? 40 : 20;
+        }
+ 
+        const outputPath = path.join(__dirname, 'temp_watermark.jpg');
+        await image.write(outputPath);
+        return outputPath;
+    } catch (err) {
+        console.error('[Watermark Error]:', err.message);
+        return null;
+    }
+}
+ 
 // Endpoint kirim pesan (Multi-Session)
 app.post('/api/wa/send', async (req, res) => {
     const { sessionId, to, text, imageUrl } = req.body;
@@ -132,12 +183,39 @@ app.post('/api/wa/send', async (req, res) => {
 
         const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
         
-        if (imageUrl) {
+        if (req.body.location) {
+            // KIRIM LOKASI ASLI (Murni peta, tanpa nama kustom agar tidak ngelink)
+            await s.sock.sendMessage(jid, { 
+                location: { 
+                    degreesLatitude: req.body.location.latitude, 
+                    degreesLongitude: req.body.location.longitude
+                }
+            });
+            // KIRIM KETERANGAN SEBAGAI PESAN TERPISAH (Ukuran normal, tidak ngelink)
+            if (text) {
+                await s.sock.sendMessage(jid, { text: text.trim() });
+            }
+        } else if (imageUrl) {
+            let finalImage = imageUrl;
+            let isTemp = false;
+ 
+            if (req.body.watermark) {
+                const watermarkedPath = await addWatermark(imageUrl, req.body.watermark);
+                if (watermarkedPath) {
+                    finalImage = watermarkedPath;
+                    isTemp = true;
+                }
+            }
+ 
             // KIRIM GAMBAR DENGAN CAPTION
             await s.sock.sendMessage(jid, { 
-                image: { url: imageUrl }, 
+                image: isTemp ? fs.readFileSync(finalImage) : { url: finalImage }, 
                 caption: text 
             });
+ 
+            if (isTemp && fs.existsSync(finalImage)) {
+                fs.unlinkSync(finalImage);
+            }
         } else {
             // KIRIM TEKS SAJA
             await s.sock.sendMessage(jid, { text });

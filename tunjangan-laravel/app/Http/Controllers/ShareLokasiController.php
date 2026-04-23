@@ -177,13 +177,17 @@ class ShareLokasiController extends Controller
             if (count($names) > 0) $tagText = "\n👥 *Bersama:* " . implode(", ", $names);
         }
 
-        $text = "📍 *SHARE LOKASI (MOBILE)*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Nama:* {$user->name}\n🏥 *Lokasi RS:* {$rs->nama_rs}{$tagText}\n🕐 *Waktu:* {$waktu}\n📝 *Keterangan:* ".($request->keterangan ?? '-')."\n━━━━━━━━━━━━━━━━━━━━\n🗺️ *Maps:* {$mapsUrl}";
+        $text = ($rs->nama_rs ?? 'Lokasi') . "\n" . ($request->keterangan ?? '') . ($tagText ? " " . $tagText : "");
 
         try {
             $resWa = Http::timeout(5)->post('http://127.0.0.1:3001/api/wa/send', [
                 'sessionId' => $sessionId,
                 'to' => $targetGroup,
-                'text' => $text
+                'text' => $text,
+                'location' => [
+                    'latitude' => (float) $request->latitude,
+                    'longitude' => (float) $request->longitude
+                ]
             ]);
             
             if ($resWa->successful()) {
