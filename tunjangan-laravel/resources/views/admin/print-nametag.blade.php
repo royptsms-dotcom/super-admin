@@ -23,7 +23,12 @@
             position: relative; clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
         }
-        .header img { height: 12mm; margin-bottom: 2mm; }
+        .header img { 
+            height: 12mm; margin-bottom: 2mm;
+            /* Tepian logo memudar ke transparan, tengah tetap jelas */
+            -webkit-mask-image: radial-gradient(circle, black 55%, transparent 80%);
+            mask-image: radial-gradient(circle, black 55%, transparent 80%);
+        }
         .header span { font-size: 8px; font-weight: 800; letter-spacing: 1px; }
 
         .photo-box {
