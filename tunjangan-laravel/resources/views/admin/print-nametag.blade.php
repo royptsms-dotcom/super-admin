@@ -7,13 +7,14 @@
     <style>
         @page { 
             size: 54mm 86mm; 
-            margin: 0; /* Menghapus header/footer browser (tanggal, url, dll) */
+            margin: 0 !important; /* Memaksa margin 0 untuk menghilangkan header/footer browser */
         }
         body { 
             font-family: 'Arial', sans-serif; 
             margin: 0; padding: 0; 
             background: #f0f0f0; 
-            -webkit-print-color-adjust: exact; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
         }
         .id-card {
             width: 54mm; height: 86mm;
@@ -22,14 +23,25 @@
             margin: 20px auto; border-radius: 8px;
         }
         @media print {
-            body { background: none; margin: 0; }
-            .id-card { margin: 0; box-shadow: none; border-radius: 0; }
+            body { background: none !important; margin: 0 !important; }
+            .id-card { margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
             .no-print { display: none !important; }
             html, body {
                 width: 54mm;
                 height: 86mm;
             }
         }
+    </style>
+    <script>
+        // Trik untuk menghapus judul halaman saat cetak agar header atas kosong
+        var originalTitle = document.title;
+        window.onbeforeprint = function() {
+            document.title = "";
+        };
+        window.onafterprint = function() {
+            document.title = originalTitle;
+        };
+    </script>
         .header {
             height: 25mm; background: linear-gradient(135deg, #4680ff, #3264d1);
             position: relative; clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
