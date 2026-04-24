@@ -165,7 +165,6 @@ export default function ProfilScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Avatar */}
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={gantiFoto} disabled={uploadingFoto}>
             {profil?.foto_url ? (
@@ -186,7 +185,6 @@ export default function ProfilScreen() {
           <Text style={styles.avatarRole}>{profil?.role?.toUpperCase()}</Text>
         </View>
 
-        {/* Preview Name Tag */}
         <View style={[styles.card, { backgroundColor: '#eef2ff', borderColor: '#c7d2fe', borderWidth: 1 }]}>
           <Text style={[styles.cardTitle, { marginBottom: 4 }]}>🎫 Name Tag Digital</Text>
           <Text style={{ fontSize: 11, color: '#6366f1', marginBottom: 12 }}>Preview kartu identitas Anda</Text>
@@ -195,7 +193,6 @@ export default function ProfilScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* TARGET FORWARD GRUP WA (SISTEM 2) */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🛰️ WhatsApp Forwarding</Text>
           <Text style={{ fontSize: 11, color: '#8b96a5', marginBottom: 12 }}>Tentukan grup tujuan forward laporan Anda</Text>
@@ -219,7 +216,6 @@ export default function ProfilScreen() {
           <Text style={{ fontSize: 10, color: '#adb5bd', marginTop: 10, fontStyle: 'italic' }}>* Scan di menu Dashboard "Mapping Grup WA"</Text>
         </View>
 
-        {/* Info Box */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>📋 Informasi Akun</Text>
           <InfoItem label="ID Karyawan" value={profil?.employee_id} last={false} />
@@ -230,7 +226,6 @@ export default function ProfilScreen() {
           <Text style={styles.lockNote}>* Data dikunci, hubungi admin untuk mengubah</Text>
         </View>
 
-        {/* Ganti Password */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>🔑 Ganti Password</Text>
           <PasswordInput label="Password Lama" value={passLama} onChange={setPassLama} show={showPassLama} setShow={setShowPassLama} />
@@ -242,6 +237,7 @@ export default function ProfilScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
       <Modal visible={isScanning} animationType="slide" transparent={false}>
           <View style={styles.scannerOverlay}>
             <CameraView
@@ -260,7 +256,6 @@ export default function ProfilScreen() {
           </View>
         </Modal>
 
-      {/* MODAL NAME TAG */}
       <Modal visible={showNameTag} transparent animationType="fade" onRequestClose={() => setShowNameTag(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

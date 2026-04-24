@@ -5,7 +5,8 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const cors = require('cors');
 const axios = require('axios');
-const { Jimp } = require('jimp');
+const { Jimp, loadFont } = require('jimp');
+const fonts = require('@jimp/plugin-print/fonts');
 const path = require('path');
 
 const app = express();
@@ -117,47 +118,75 @@ app.get('/api/wa/pair-code/:sessionId', async (req, res) => {
     }, 1000);
 });
 
-async function addWatermark(imageUrl, data) {
+async function addWatermark(imagePathOrUrl, data) {
+    console.log('[Watermark] Memulai proses watermark untuk:', imagePathOrUrl);
     try {
-        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        const image = await Jimp.read(Buffer.from(response.data));
+        const sharp = require('sharp');
+        let imageBuffer;
+
+        if (imagePathOrUrl.startsWith('http')) {
+            console.log('[Watermark] Mengunduh gambar via HTTP...');
+            const response = await axios.get(imagePathOrUrl, { responseType: 'arraybuffer' });
+            imageBuffer = Buffer.from(response.data);
+        } else {
+            console.log('[Watermark] Membaca gambar dari local disk...');
+            if (!fs.existsSync(imagePathOrUrl)) {
+                throw new Error("File gambar lokal tidak ditemukan: " + imagePathOrUrl);
+            }
+            imageBuffer = fs.readFileSync(imagePathOrUrl);
+        }
+        
+        console.log('[Watermark] Meresize gambar dengan Sharp (untuk mencegah blocking event loop)...');
+        // Resize dengan sharp sangat cepat (C++) dan tidak mem-block event loop seperti Jimp
+        const resizedBuffer = await sharp(imageBuffer)
+            .resize({ width: 1200, withoutEnlargement: true })
+            .toBuffer();
+
+        console.log('[Watermark] Memuat gambar ke Jimp...');
+        let image = await Jimp.read(resizedBuffer);
+        console.log('[Watermark] Gambar berhasil dimuat oleh Jimp.');
         
         const width = image.bitmap.width;
         const height = image.bitmap.height;
  
-        // Background Hitam Transparan di bawah
-        const rectHeight = Math.floor(height * 0.15);
-        const rectY = height - rectHeight;
+        const margin = Math.floor(width * 0.03); 
+        const padding = 20; 
+        const boxWidth = width - (margin * 2);
         
-        const overlay = new Jimp({ width, height: rectHeight, color: 0x00000088 });
-        image.composite(overlay, 0, rectY);
+        const isHighRes = width > 1000;
+        console.log('[Watermark] Memuat font... (isHighRes:', isHighRes, ')');
+        const fontLarge = await loadFont(isHighRes ? fonts.SANS_32_WHITE : fonts.SANS_16_WHITE);
+        const fontSmall = await loadFont(isHighRes ? fonts.SANS_16_WHITE : fonts.SANS_8_WHITE);
+        console.log('[Watermark] Font berhasil dimuat.');
+        
+        const lineSpacingLarge = isHighRes ? 45 : 25;
+        const lineSpacingSmall = isHighRes ? 25 : 15;
+
+        const boxHeight = padding * 2 + lineSpacingLarge + (lineSpacingSmall * 3);
+        const boxY = height - boxHeight - margin;
+        
+        console.log('[Watermark] Membuat overlay...');
+        const overlay = new Jimp({ width: boxWidth, height: boxHeight, color: 0x000000B3 }); 
+        image.composite(overlay, margin, boxY);
  
-        // Font (Default Jimp fonts)
-        const font = await Jimp.loadFont(width > 1000 ? Jimp.FONT_SANS_32_WHITE : Jimp.FONT_SANS_16_WHITE);
+        let textX = margin + padding;
+        let textY = boxY + padding;
  
-        const margin = 20;
-        let currentY = rectY + 10;
- 
-        const lines = [
-            `📍 ${data.location || 'Unknown Location'}`,
-            `🌐 Lat: ${data.lat}, Long: ${data.lng}`,
-            `⏰ ${data.time}`,
-            `📝 Note: ${data.note || '-'}`
-        ];
- 
-        for (const line of lines) {
-            image.print({
-                font,
-                x: margin,
-                y: currentY,
-                text: line,
-                maxWidth: width - (margin * 2)
-            });
-            currentY += width > 1000 ? 40 : 20;
-        }
- 
-        const outputPath = path.join(__dirname, 'temp_watermark.jpg');
+        image.print({ font: fontLarge, x: textX, y: textY, text: data.location || 'Lokasi', maxWidth: boxWidth - (padding * 2) });
+        textY += lineSpacingLarge;
+
+        image.print({ font: fontSmall, x: textX, y: textY, text: data.note || 'GPS Map Camera', maxWidth: boxWidth - (padding * 2) });
+        textY += lineSpacingSmall;
+
+        image.print({ font: fontSmall, x: textX, y: textY, text: `Lat ${data.lat} Long ${data.lng}`, maxWidth: boxWidth - (padding * 2) });
+        textY += lineSpacingSmall;
+
+        image.print({ font: fontSmall, x: textX, y: textY, text: data.time, maxWidth: boxWidth - (padding * 2) });
+  
+        const outputPath = path.join(__dirname, 'temp_watermark_' + Date.now() + '.jpg');
+        console.log('[Watermark] Menyimpan gambar ke:', outputPath);
         await image.write(outputPath);
+        console.log('[Watermark] Selesai menyusun gambar!');
         return outputPath;
     } catch (err) {
         console.error('[Watermark Error]:', err.message);
@@ -208,8 +237,12 @@ app.post('/api/wa/send', async (req, res) => {
             }
  
             // KIRIM GAMBAR DENGAN CAPTION
+            const imagePayload = (finalImage.startsWith('http') && !isTemp) 
+                                 ? { url: finalImage } 
+                                 : fs.readFileSync(finalImage);
+
             await s.sock.sendMessage(jid, { 
-                image: isTemp ? fs.readFileSync(finalImage) : { url: finalImage }, 
+                image: imagePayload, 
                 caption: text 
             });
  

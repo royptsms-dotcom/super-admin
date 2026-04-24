@@ -115,8 +115,8 @@ class LemburController extends Controller
         }
 
         try {
-            // Konstruksi URL Foto (Agar Bot bisa download fotonya)
-            $imageUrl = $lembur->foto_url ? url('storage/' . $lembur->foto_url) : null;
+            // Konstruksi Path Foto (Gunakan local path agar tidak deadlock)
+            $imageUrl = $lembur->foto_url ? storage_path('app/public/' . $lembur->foto_url) : null;
 
             // Data untuk Watermark (Sesuai permintaan: Lokasi, Koordinat, Waktu, Note)
             $watermark = [
@@ -131,7 +131,7 @@ class LemburController extends Controller
             $caption = "👤 *Nama:* {$user->name}{$tagText}\n📝 *Ket:* {$request->keterangan}";
 
             // Kirim ke Microservice Node.js
-            $resWa = Http::timeout(10)->post('http://127.0.0.1:3001/api/wa/send', [
+            $resWa = Http::timeout(60)->post('http://127.0.0.1:3001/api/wa/send', [
                 'sessionId' => $sessionId,
                 'to'        => $targetGroup,
                 'text'      => $caption,

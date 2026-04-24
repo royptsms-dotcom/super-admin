@@ -338,8 +338,17 @@ class AttendanceController extends Controller
 
                     // 2. WHATSAPP NOTIFICATION (External) - Hanya jika ada nomor WA
                     if (!empty($target->no_wa)) {
+                        $sessionId = 'report_bot';
+                        try {
+                            $userId = auth()->id() ?? 1;
+                            $resCheck = Http::timeout(1)->get("http://localhost:3001/api/wa/qr/user_{$userId}");
+                            if ($resCheck->json('status') === 'connected') {
+                                $sessionId = "user_{$userId}";
+                            }
+                        } catch (\Exception $e) {}
+
                         Http::timeout(5)->post('http://127.0.0.1:3001/api/wa/send', [
-                            'sessionId' => 'report_bot',
+                            'sessionId' => $sessionId,
                             'to' => $target->no_wa,
                             'text' => $msg
                         ]);

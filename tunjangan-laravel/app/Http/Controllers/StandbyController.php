@@ -52,6 +52,12 @@ class StandbyController extends Controller
 
         // --- FORWARD WHATSAPP ---
         $sessionId = 'report_bot';
+        try {
+            $resCheck = Http::timeout(1)->get("http://localhost:3001/api/wa/qr/user_{$user->id}");
+            if ($resCheck->json('status') === 'connected') {
+                $sessionId = "user_{$user->id}";
+            }
+        } catch (\Exception $e) {}
         
         // Ambil Mapping Grup berdasar Jabatan
         $mapping = WaGroupMapping::where('job_name', $user->job)->first();

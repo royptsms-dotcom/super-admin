@@ -109,10 +109,33 @@ export default function LemburScreen() {
   }
 
   async function ambilLokasi() {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') return;
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    setLocation(loc.coords);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Izin Ditolak', 'Izin lokasi diperlukan untuk laporan lembur');
+        return;
+      }
+      
+      // Coba ambil posisi terakhir dulu (cepat)
+      const lastLoc = await Location.getLastKnownPositionAsync();
+      if (lastLoc) setLocation(lastLoc.coords);
+
+      // Coba ambil posisi akurat (mungkin butuh waktu)
+      const loc = await Location.getCurrentPositionAsync({ 
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation(loc.coords);
+    } catch (err) {
+      console.log('Gagal ambil lokasi:', err);
+      // Jika masih gagal dan belum ada lokasi sama sekali
+      if (!location) {
+        Alert.alert(
+          'GPS Error', 
+          'Gagal mendapatkan lokasi. Pastikan GPS HP aktif dan Anda berada di area terbuka.',
+          [{ text: 'Coba Lagi', onPress: () => ambilLokasi() }]
+        );
+      }
+    }
   }
 
   async function ambilMasterData() {
