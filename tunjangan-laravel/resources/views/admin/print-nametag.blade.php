@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Name Tag</title>
+    <title></title>
     <style>
         /* Menghilangkan Header/Footer Browser */
         @page { 
@@ -32,13 +32,29 @@
         }
 
         .header {
-            height: 28mm; background: linear-gradient(135deg, #1a237e, #0d47a1);
+            height: 28mm; 
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
             position: relative; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; color: #fff;
             clip-path: polygon(0 0, 100% 0, 100% 80%, 0% 100%);
+            overflow: hidden;
         }
-        .header img { height: 14mm; margin-bottom: 2mm; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-        .header span { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; opacity: 0.9; }
+        .header img { 
+            height: 14mm; 
+            margin-bottom: 2mm; 
+            mix-blend-mode: screen; /* Menyatu dengan latar biru */
+            filter: brightness(1.3) contrast(1.1);
+            opacity: 0.95;
+        }
+        /* Efek fade dari bawah header */
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 10mm;
+            background: linear-gradient(to bottom, transparent, rgba(13,71,161,0.6));
+            pointer-events: none;
+        }
 
         .photo-box {
             width: 34mm; height: 34mm; border-radius: 50%;
