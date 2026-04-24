@@ -4,12 +4,16 @@ cd /d D:\Android\e-sms
 
 echo [SISTEM] Mendeteksi IP Address jaringan saat ini...
 :: Mengambil IP Address baris pertama yang ditemukan
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| find "IPv4"') do (
+set MY_IP=
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"Wireless LAN adapter Wi-Fi" /A:4 ^| findstr "IPv4"') do (
     set MY_IP=%%a
-    goto :found_ip
+)
+if not defined MY_IP (
+    for /f "usebackq tokens=2 delims=:" %%a in (`ipconfig ^| findstr /R "IPv4.*" ^| findstr /V "172." ^| findstr /V "192.168.56."`) do (
+        if not defined MY_IP set MY_IP=%%a
+    )
 )
 :found_ip
-:: Hapus spasi berlebih
 set MY_IP=%MY_IP: =%
 
 echo [SISTEM] Jaringan terdeteksi di: %MY_IP%
