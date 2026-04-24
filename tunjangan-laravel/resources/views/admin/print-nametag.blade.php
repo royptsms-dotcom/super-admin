@@ -19,7 +19,7 @@
             .no-print { display: none; }
         }
         .header {
-            height: 25mm; background: linear-gradient(135deg, #4680ff, #3264d1);
+            height: 25mm; background: linear-gradient(135deg, #050d1a, #0a1a30);
             position: relative; clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
         }
