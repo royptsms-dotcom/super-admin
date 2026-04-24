@@ -3,102 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>Cetak Name Tag - {{ $user->name }}</title>
     <style>
-        @page { 
-            size: 54mm 86mm; 
-            margin: 0; 
-        }
-        
-        @media print {
-            body { margin: 0; background: none; }
-            .no-print { display: none !important; }
-            .id-card { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
-        }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; padding: 0; background: #f4f7f6; 
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        
+        @page { size: 54mm 86mm; margin: 0; }
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: #f0f0f0; -webkit-print-color-adjust: exact; }
         .id-card {
             width: 54mm; height: 86mm;
             background: #fff; position: relative;
-            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin: 20px auto; border-radius: 10px;
+            overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin: 20px auto; border-radius: 8px;
         }
-
-        /* Header: Fade linear dari atas (biru gelap) ke bawah (transparan) */
+        @media print {
+            body { background: none; }
+            .id-card { margin: 0; box-shadow: none; }
+            .no-print { display: none; }
+        }
         .header {
-            height: 36mm; 
-            background: linear-gradient(180deg, #0d1b4e 0%, #1565c0 60%, #1e88e5 100%);
-            position: relative; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; color: #fff;
-            /* Fade bagian bawah header menjadi transparan agar menyatu dengan putih */
-            -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
-            mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+            height: 25mm; background: linear-gradient(135deg, #4680ff, #3264d1);
+            position: relative; clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
         }
-
-        .header img { 
-            height: 16mm; 
-            margin-bottom: 3mm;
-            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
-        }
-
-        .header span { 
-            font-size: 9px; font-weight: 800; letter-spacing: 1.5px; 
-            opacity: 0.9; text-transform: uppercase;
-        }
+        .header img { height: 12mm; margin-bottom: 2mm; }
+        .header span { font-size: 8px; font-weight: 800; letter-spacing: 1px; }
 
         .photo-box {
-            width: 34mm; height: 34mm; border-radius: 50%;
-            border: 4px solid #fff; position: absolute;
-            top: 17mm; left: 50%; transform: translateX(-50%);
-            overflow: hidden; background: #fff; z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 32mm; height: 32mm; border-radius: 50%;
+            border: 3px solid #fff; position: absolute;
+            top: 12mm; left: 50%; transform: translateX(-50%);
+            overflow: hidden; background: #e0e0e0; z-index: 10;
         }
         .photo-box img { width: 100%; height: 100%; object-fit: cover; }
 
         .info {
-            margin-top: 22mm; text-align: center; padding: 0 4mm;
+            margin-top: 22mm; text-align: center; padding: 0 5mm;
         }
-        .name { font-size: 16px; font-weight: 800; color: #1a237e; margin-bottom: 4px; text-transform: uppercase; }
-        .job { font-size: 10px; font-weight: 700; color: #fff; background: #1e88e5; padding: 3px 12px; border-radius: 50px; display: inline-block; margin-bottom: 12px; }
+        .name { font-size: 14px; font-weight: 900; color: #1e293b; margin-bottom: 4px; text-transform: uppercase; }
+        .job { font-size: 9px; font-weight: 700; color: #4680ff; background: #eef2ff; padding: 3px 10px; border-radius: 50px; display: inline-block; margin-bottom: 12px; }
 
         .footer {
-            position: absolute; bottom: 0; width: 100%; height: 18mm;
-            background: #fafafa; border-top: 1px solid #eee;
+            position: absolute; bottom: 0; width: 100%; height: 15mm;
+            background: #f8fafc; border-top: 1px dashed #cbd5e1;
             display: flex; align-items: center; justify-content: space-between; padding: 0 5mm; box-sizing: border-box;
         }
         .id-badge { text-align: left; }
-        .id-label { font-size: 7px; color: #78909c; text-transform: uppercase; font-weight: 800; }
-        .id-value { font-size: 12px; font-weight: 900; color: #263238; }
+        .id-label { font-size: 6px; color: #64748b; text-transform: uppercase; font-weight: 800; }
+        .id-value { font-size: 11px; font-weight: 900; color: #334155; }
         
-        .qr { width: 12mm; height: 12mm; }
+        .qr { width: 10mm; height: 10mm; background: #fff; padding: 1px; }
 
         .no-print-top {
             position: fixed; top: 0; left: 0; right: 0;
-            background: rgba(0,0,0,0.8); color: #fff; padding: 12px; 
-            text-align: center; z-index: 999;
+            background: #333; color: #fff; padding: 10px; text-align: center; z-index: 999;
         }
-        .btn-print { 
-            background: #1e88e5; color: #fff; border: none; padding: 8px 20px; 
-            border-radius: 6px; cursor: pointer; font-weight: bold;
-        }
+        .btn-print { background: #4680ff; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     </style>
-    <script>
-        // Kosongkan title sesaat sebelum dialog print terbuka
-        var _origTitle = document.title;
-        window.onbeforeprint = function() { document.title = ''; };
-        window.onafterprint  = function() { document.title = _origTitle; };
-    </script>
 </head>
 <body onload="window.print()">
     <div class="no-print-top no-print">
-        <span style="margin-right: 15px;">Preview Name Tag - <b>{{ $user->name }}</b></span>
-        <button class="btn-print" onclick="window.print()">CETAK SEKARANG</button>
+        Preview Name Tag - <button class="btn-print" onclick="window.print()">CETAK SEKARANG</button>
     </div>
 
     <div class="id-card">
