@@ -30,23 +30,21 @@
             margin: 20px auto; border-radius: 10px;
         }
 
-        /* Header: Tepi samar di semua sisi menggunakan mask-image */
+        /* Header: Fade linear dari atas (biru gelap) ke bawah (transparan) */
         .header {
-            height: 32mm; 
-            background: linear-gradient(135deg, #1a237e, #1565c0, #0d47a1);
+            height: 36mm; 
+            background: linear-gradient(180deg, #0d1b4e 0%, #1565c0 60%, #1e88e5 100%);
             position: relative; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; color: #fff;
-            /* Fade tepi: kiri-kanan-bawah menjadi samar/transparan */
-            -webkit-mask-image: radial-gradient(ellipse 85% 80% at 50% 40%, black 30%, transparent 100%);
-            mask-image: radial-gradient(ellipse 85% 80% at 50% 40%, black 30%, transparent 100%);
+            /* Fade bagian bawah header menjadi transparan agar menyatu dengan putih */
+            -webkit-mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
         }
 
         .header img { 
             height: 16mm; 
-            margin-bottom: 3mm; 
-            /* Logo menyatu dengan background biru */
-            mix-blend-mode: screen;
-            filter: brightness(1.4) contrast(1.0);
+            margin-bottom: 3mm;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
         }
 
         .header span { 
