@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Name Tag - {{ $user->name }}</title>
     <style>
-        @page { size: 54mm 86mm; margin: 0; }
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 0; background: #f0f0f0; -webkit-print-color-adjust: exact; }
+        @page { 
+            size: 54mm 86mm; 
+            margin: 0; /* Menghapus header/footer browser (tanggal, url, dll) */
+        }
+        body { 
+            font-family: 'Arial', sans-serif; 
+            margin: 0; padding: 0; 
+            background: #f0f0f0; 
+            -webkit-print-color-adjust: exact; 
+        }
         .id-card {
             width: 54mm; height: 86mm;
             background: #fff; position: relative;
@@ -14,9 +22,13 @@
             margin: 20px auto; border-radius: 8px;
         }
         @media print {
-            body { background: none; }
-            .id-card { margin: 0; box-shadow: none; }
-            .no-print { display: none; }
+            body { background: none; margin: 0; }
+            .id-card { margin: 0; box-shadow: none; border-radius: 0; }
+            .no-print { display: none !important; }
+            html, body {
+                width: 54mm;
+                height: 86mm;
+            }
         }
         .header {
             height: 25mm; background: linear-gradient(135deg, #4680ff, #3264d1);
