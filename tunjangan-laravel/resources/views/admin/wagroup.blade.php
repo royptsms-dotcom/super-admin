@@ -48,9 +48,6 @@
                         <td>{{ $m->group_name ?? '-' }}</td>
                         <td>
                             <div class="flex items-center gap-3">
-                                <a href="javascript:void(0)" onclick="openModalQR('{{ $m->wa_group_id }}', '{{ strtoupper($m->job_name) }}')" class="text-primary-500 hover:text-primary-700" title="Tampilkan QR Barcode">
-                                    <i data-feather="maximize" style="width: 18px; height: 18px;"></i>
-                                </a>
                                 <form action="{{ route('admin.wagroup.destroy', $m->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus mapping ini?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0 bg-transparent"><i data-feather="trash-2" style="width: 18px; height: 18px;"></i></button>
